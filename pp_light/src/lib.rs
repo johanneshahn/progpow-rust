@@ -8,15 +8,15 @@ extern crate crunchy;
 extern crate log;
 
 #[cfg(test)]
-extern crate tempdir;
-#[cfg(test)]
 extern crate rustc_hex;
 #[cfg(test)]
 extern crate serde_json;
+#[cfg(test)]
+extern crate tempdir;
 
 pub mod cache;
 pub mod compute;
 mod keccak;
+pub mod progpow;
 mod seed_compute;
 mod shared;
-pub mod progpow;

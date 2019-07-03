@@ -30,9 +30,9 @@
 //! ProgPoW audits have been proposed to analyse the efficiency of a ProgPoW ASICs over
 //! GPUs and analysis of the economic impact on the Ethereum protocol.
 
-use crate::compute::{FNV_PRIME, calculate_dag_item};
+use crate::compute::{calculate_dag_item, FNV_PRIME};
 use crate::keccak::H256;
-use crate::shared::{ETHASH_ACCESSES, ETHASH_MIX_BYTES, Node, get_data_size};
+use crate::shared::{get_data_size, Node, ETHASH_ACCESSES, ETHASH_MIX_BYTES};
 
 const PROGPOW_CACHE_BYTES: usize = 16 * 1024;
 const PROGPOW_CACHE_WORDS: usize = PROGPOW_CACHE_BYTES / 4;
@@ -48,20 +48,17 @@ const PROGPOW_REGS: usize = 32;
 const FNV_HASH: u32 = 0x811c9dc5;
 
 const KECCAKF_RNDC: [u32; 24] = [
-	0x00000001, 0x00008082, 0x0000808a, 0x80008000, 0x0000808b, 0x80000001,
-	0x80008081, 0x00008009, 0x0000008a, 0x00000088, 0x80008009, 0x8000000a,
-	0x8000808b, 0x0000008b, 0x00008089, 0x00008003, 0x00008002, 0x00000080,
-	0x0000800a, 0x8000000a, 0x80008081, 0x00008080, 0x80000001, 0x80008008
+	0x00000001, 0x00008082, 0x0000808a, 0x80008000, 0x0000808b, 0x80000001, 0x80008081, 0x00008009,
+	0x0000008a, 0x00000088, 0x80008009, 0x8000000a, 0x8000808b, 0x0000008b, 0x00008089, 0x00008003,
+	0x00008002, 0x00000080, 0x0000800a, 0x8000000a, 0x80008081, 0x00008080, 0x80000001, 0x80008008,
 ];
 
 const KECCAKF_ROTC: [u32; 24] = [
-	1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
-	27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
+	1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44,
 ];
 
 const KECCAKF_PILN: [usize; 24] = [
-	10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
-	15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
+	10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1,
 ];
 
 fn keccak_f800_round(st: &mut [u32; 25], r: usize) {
@@ -106,10 +103,10 @@ fn keccak_f800_round(st: &mut [u32; 25], r: usize) {
 
 fn keccak_f800(header_hash: H256, nonce: u64, result: [u32; 8], st: &mut [u32; 25]) {
 	for i in 0..8 {
-		st[i] = (header_hash[4 * i] as u32) +
-			((header_hash[4 * i + 1] as u32) << 8) +
-			((header_hash[4 * i + 2] as u32) << 16) +
-			((header_hash[4 * i + 3] as u32) << 24);
+		st[i] = (header_hash[4 * i] as u32)
+			+ ((header_hash[4 * i + 1] as u32) << 8)
+			+ ((header_hash[4 * i + 2] as u32) << 16)
+			+ ((header_hash[4 * i + 3] as u32) << 24);
 	}
 
 	st[8] = nonce as u32;
@@ -158,8 +155,12 @@ impl Kiss99 {
 
 	#[inline]
 	fn next_u32(&mut self) -> u32 {
-		self.z = 36969u32.wrapping_mul(self.z & 65535).wrapping_add(self.z >> 16);
-		self.w = 18000u32.wrapping_mul(self.w & 65535).wrapping_add(self.w >> 16);
+		self.z = 36969u32
+			.wrapping_mul(self.z & 65535)
+			.wrapping_add(self.z >> 16);
+		self.w = 18000u32
+			.wrapping_mul(self.w & 65535)
+			.wrapping_add(self.w >> 16);
 		let mwc = (self.z << 16).wrapping_add(self.w);
 		self.jsr ^= self.jsr << 17;
 		self.jsr ^= self.jsr >> 13;
@@ -259,8 +260,8 @@ fn progpow_loop(
 ) {
 	// All lanes share a base address for the global load. Global offset uses
 	// mix[0] to guarantee it depends on the load result.
-	let g_offset = mix[loop_ % PROGPOW_LANES][0] as usize %
-		(64 * data_size / (PROGPOW_LANES * PROGPOW_DAG_LOADS));
+	let g_offset = mix[loop_ % PROGPOW_LANES][0] as usize
+		% (64 * data_size / (PROGPOW_LANES * PROGPOW_DAG_LOADS));
 
 	// 256 bytes of dag data
 	let mut dag_item = [0u32; 64];
@@ -366,14 +367,7 @@ pub fn progpow(
 	// Execute the randomly generated inner loop
 	let period = block_number / PROGPOW_PERIOD_LENGTH as u64;
 	for i in 0..PROGPOW_CNT_DAG {
-		progpow_loop(
-			period,
-			i,
-			&mut mix,
-			cache,
-			c_dag,
-			data_size,
-		);
+		progpow_loop(period, i, &mut mix, cache, c_dag, data_size);
 	}
 
 	// Reduce mix data to a single per-lane result
@@ -415,12 +409,12 @@ pub fn generate_cdag(cache: &[Node]) -> CDag {
 mod test {
 	use tempdir::TempDir;
 
+	use super::*;
 	use crate::cache::{NodeCacheBuilder, OptimizeFor};
 	use crate::keccak::H256;
 	use rustc_hex::FromHex;
 	use serde_json::{self, Value};
 	use std::collections::VecDeque;
-	use super::*;
 
 	fn h256(hex: &str) -> H256 {
 		let bytes: Vec<u8> = FromHex::from_hex(hex).unwrap();
@@ -438,16 +432,29 @@ mod test {
 		let c_dag = generate_cdag(cache.as_ref());
 
 		let expected = vec![
-			690150178u32, 1181503948, 2248155602, 2118233073, 2193871115,
-			1791778428, 1067701239, 724807309, 530799275, 3480325829, 3899029234,
-			1998124059, 2541974622, 1100859971, 1297211151, 3268320000, 2217813733,
-			2690422980, 3172863319, 2651064309
+			690150178u32,
+			1181503948,
+			2248155602,
+			2118233073,
+			2193871115,
+			1791778428,
+			1067701239,
+			724807309,
+			530799275,
+			3480325829,
+			3899029234,
+			1998124059,
+			2541974622,
+			1100859971,
+			1297211151,
+			3268320000,
+			2217813733,
+			2690422980,
+			3172863319,
+			2651064309,
 		];
 
-		assert_eq!(
-			c_dag.iter().take(20).cloned().collect::<Vec<_>>(),
-			expected,
-		);
+		assert_eq!(c_dag.iter().take(20).cloned().collect::<Vec<_>>(), expected,);
 	}
 
 	#[test]
@@ -464,10 +471,7 @@ mod test {
 		];
 
 		for (i, &(a, b, expected)) in tests.iter().enumerate() {
-			assert_eq!(
-				merge(a, b, i as u32),
-				expected,
-			);
+			assert_eq!(merge(a, b, i as u32), expected,);
 		}
 	}
 
@@ -499,29 +503,20 @@ mod test {
 		];
 
 		for (i, &(a, b, expected)) in tests.iter().enumerate() {
-			assert_eq!(
-				math(a, b, i as u32),
-				expected,
-			);
+			assert_eq!(math(a, b, i as u32), expected,);
 		}
 	}
 
 	#[test]
 	fn test_keccak_256() {
 		let expected = "5dd431e5fbc604f499bfa0232f45f8f142d0ff5178f539e5a7800bf0643697af";
-		assert_eq!(
-			keccak_f800_long([0; 32], 0, [0; 8]),
-			h256(expected),
-		);
+		assert_eq!(keccak_f800_long([0; 32], 0, [0; 8]), h256(expected),);
 	}
 
 	#[test]
 	fn test_keccak_64() {
 		let expected: u64 = 0x5dd431e5fbc604f4;
-		assert_eq!(
-			keccak_f800_short([0; 32], 0, [0; 8]),
-			expected,
-		);
+		assert_eq!(keccak_f800_short([0; 32], 0, [0; 8]), expected,);
 	}
 
 	#[test]
@@ -533,29 +528,21 @@ mod test {
 
 		let header_hash = [0; 32];
 
-		let (digest, result) = progpow(
-			header_hash,
-			0,
-			0,
-			cache.as_ref(),
-			&c_dag,
-		);
+		let (digest, result) = progpow(header_hash, 0, 0, cache.as_ref(), &c_dag);
 
-        println!("Digest: {:?}", digest);
-        println!("Result: {:?}", result);
+		println!("Digest: {:?}", digest);
+		println!("Result: {:?}", result);
 
-		let expected_digest: Vec<u8> = FromHex::from_hex("63155f732f2bf556967f906155b510c917e48e99685ead76ea83f4eca03ab12b").unwrap();
-		let expected_result: Vec<u8> = FromHex::from_hex("faeb1be51075b03a4ff44b335067951ead07a3b078539ace76fd56fc410557a3").unwrap();
+		let expected_digest: Vec<u8> =
+			FromHex::from_hex("63155f732f2bf556967f906155b510c917e48e99685ead76ea83f4eca03ab12b")
+				.unwrap();
+		let expected_result: Vec<u8> =
+			FromHex::from_hex("faeb1be51075b03a4ff44b335067951ead07a3b078539ace76fd56fc410557a3")
+				.unwrap();
 
-		assert_eq!(
-			digest.to_vec(),
-			expected_digest,
-		);
+		assert_eq!(digest.to_vec(), expected_digest,);
 
-		assert_eq!(
-			result.to_vec(),
-			expected_result,
-		);
+		assert_eq!(result.to_vec(), expected_result,);
 	}
 
 	#[test]
@@ -571,23 +558,27 @@ mod test {
 		let tests: Vec<VecDeque<Value>> =
 			serde_json::from_slice(include_bytes!("../res/progpow_testvectors.json")).unwrap();
 
-		let tests: Vec<ProgpowTest> = tests.into_iter().map(|mut test: VecDeque<Value>| {
-			assert!(test.len() == 5);
+		let tests: Vec<ProgpowTest> = tests
+			.into_iter()
+			.map(|mut test: VecDeque<Value>| {
+				assert!(test.len() == 5);
 
-			let block_number: u64 = serde_json::from_value(test.pop_front().unwrap()).unwrap();
-			let header_hash: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
-			let nonce: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
-			let mix_hash: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
-			let final_hash: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
+				let block_number: u64 = serde_json::from_value(test.pop_front().unwrap()).unwrap();
+				let header_hash: String =
+					serde_json::from_value(test.pop_front().unwrap()).unwrap();
+				let nonce: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
+				let mix_hash: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
+				let final_hash: String = serde_json::from_value(test.pop_front().unwrap()).unwrap();
 
-			ProgpowTest {
-				block_number,
-				header_hash: h256(&header_hash),
-				nonce: u64::from_str_radix(&nonce, 16).unwrap(),
-				mix_hash: h256(&mix_hash),
-				final_hash: h256(&final_hash),
-			}
-		}).collect();
+				ProgpowTest {
+					block_number,
+					header_hash: h256(&header_hash),
+					nonce: u64::from_str_radix(&nonce, 16).unwrap(),
+					mix_hash: h256(&mix_hash),
+					final_hash: h256(&final_hash),
+				}
+			})
+			.collect();
 
 		for test in tests {
 			let builder = NodeCacheBuilder::new(OptimizeFor::Memory, u64::max_value());

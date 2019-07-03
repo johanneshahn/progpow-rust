@@ -19,15 +19,15 @@
 
 // TODO: fix endianess for big endian
 
-use crate::keccak::{keccak_512, keccak_256, H256};
 use crate::cache::{NodeCache, NodeCacheBuilder};
-use crate::progpow::{CDag, generate_cdag, progpow, keccak_f800_short, keccak_f800_long};
+use crate::keccak::{keccak_256, keccak_512, H256};
+use crate::progpow::{generate_cdag, keccak_f800_long, keccak_f800_short, progpow, CDag};
 use crate::seed_compute::SeedHashCompute;
 use crate::shared::*;
 use std::io;
 
-use std::{mem, ptr};
 use std::path::Path;
+use std::{mem, ptr};
 
 const MIX_WORDS: usize = ETHASH_MIX_BYTES / 4;
 const MIX_NODES: usize = MIX_WORDS / NODE_WORDS;
@@ -58,13 +58,22 @@ impl Light {
 	) -> Self {
 		let cache = builder.new_cache(cache_dir.to_path_buf(), block_number);
 		let dag = Box::new(generate_cdag(cache.as_ref()));
-		Light { block_number, cache, dag }
+		Light {
+			block_number,
+			cache,
+			dag,
+		}
 	}
 
 	/// Calculate the light boundary data
 	/// `header_hash` - The header hash to pack into the mix
 	/// `nonce` - The nonce to pack into the mix
-	pub fn compute(&self, header_hash: &H256, nonce: u64, block_number: u64) -> ([u32; 8], [u32; 8]) {
+	pub fn compute(
+		&self,
+		header_hash: &H256,
+		nonce: u64,
+		block_number: u64,
+	) -> ([u32; 8], [u32; 8]) {
 		progpow(
 			*header_hash,
 			nonce,
@@ -82,7 +91,11 @@ impl Light {
 		let cache = builder.from_file(cache_dir.to_path_buf(), block_number)?;
 		let dag = Box::new(generate_cdag(cache.as_ref()));
 
-		Ok(Light { block_number, cache, dag })
+		Ok(Light {
+			block_number,
+			cache,
+			dag,
+		})
 	}
 
 	pub fn to_file(&mut self) -> io::Result<&Path> {
@@ -127,14 +140,14 @@ fn hash_compute(light: &Light, full_size: usize, header_hash: &H256, nonce: u64)
 			// We use explicit lifetimes to ensure that val's borrow is invalidated until the
 			// transmuted val dies.
 			unsafe fn make_const_array<T, U>(val: &mut [T]) -> &mut [U; $n] {
-				use ::std::mem;
+				use std::mem;
 
 				debug_assert_eq!(val.len() * mem::size_of::<T>(), $n * mem::size_of::<U>());
- 				&mut *(val.as_mut_ptr() as *mut [U; $n])
-			}
+				&mut *(val.as_mut_ptr() as *mut [U; $n])
+				}
 
 			make_const_array($value)
-		}}
+			}};
 	}
 
 	#[repr(C)]
@@ -286,8 +299,8 @@ pub fn calculate_dag_item(node_index: u32, cache: &[Node]) -> Node {
 
 	debug_assert_eq!(NODE_WORDS, 16);
 	for i in 0..ETHASH_DATASET_PARENTS as u32 {
-		let parent_index = fnv_hash(node_index ^ i, ret.as_words()[i as usize % NODE_WORDS]) %
-			num_parent_nodes as u32;
+		let parent_index = fnv_hash(node_index ^ i, ret.as_words()[i as usize % NODE_WORDS])
+			% num_parent_nodes as u32;
 		let parent = &cache[parent_index as usize];
 
 		unroll! {
@@ -318,7 +331,10 @@ mod test {
 		assert_eq!(16907456usize, get_cache_size(ETHASH_EPOCH_LENGTH + 1));
 		assert_eq!(284950208usize, get_cache_size(2046 * ETHASH_EPOCH_LENGTH));
 		assert_eq!(285081536usize, get_cache_size(2047 * ETHASH_EPOCH_LENGTH));
-		assert_eq!(285081536usize, get_cache_size(2048 * ETHASH_EPOCH_LENGTH - 1));
+		assert_eq!(
+			285081536usize,
+			get_cache_size(2048 * ETHASH_EPOCH_LENGTH - 1)
+		);
 	}
 
 	#[test]
@@ -391,16 +407,28 @@ mod test {
 	fn test_drop_old_data() {
 		let tempdir = TempDir::new("").unwrap();
 		let builder = NodeCacheBuilder::new(None, u64::max_value());
-		let first = builder.light(tempdir.path(), 0).to_file().unwrap().to_owned();
+		let first = builder
+			.light(tempdir.path(), 0)
+			.to_file()
+			.unwrap()
+			.to_owned();
 
-		let second = builder.light(tempdir.path(), ETHASH_EPOCH_LENGTH).to_file().unwrap().to_owned();
+		let second = builder
+			.light(tempdir.path(), ETHASH_EPOCH_LENGTH)
+			.to_file()
+			.unwrap()
+			.to_owned();
 		assert!(fs::metadata(&first).is_ok());
 
-		let _ = builder.light(tempdir.path(), ETHASH_EPOCH_LENGTH * 2).to_file();
+		let _ = builder
+			.light(tempdir.path(), ETHASH_EPOCH_LENGTH * 2)
+			.to_file();
 		assert!(fs::metadata(&first).is_err());
 		assert!(fs::metadata(&second).is_ok());
 
-		let _ = builder.light(tempdir.path(), ETHASH_EPOCH_LENGTH * 3).to_file();
+		let _ = builder
+			.light(tempdir.path(), ETHASH_EPOCH_LENGTH * 3)
+			.to_file();
 		assert!(fs::metadata(&second).is_err());
 	}
 }

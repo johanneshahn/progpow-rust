@@ -36,15 +36,15 @@ fn compile_cmake() {
 	let mut make = cmake::Config::new("lib");
 
 	if cfg!(feature = "cuda") {
-		make.define("ETHASHCUDA","ON");
-	}else{
-		make.define("ETHASHCUDA","OFF");
+		make.define("ETHASHCUDA", "ON");
+	} else {
+		make.define("ETHASHCUDA", "OFF");
 	}
 
 	if cfg!(feature = "ocl") {
-		make.define("ETHASHCL","ON");
-	}else{
-		make.define("ETHASHCL","OFF");
+		make.define("ETHASHCL", "ON");
+	} else {
+		make.define("ETHASHCL", "OFF");
 	}
 
 	make.build_target("").build();
