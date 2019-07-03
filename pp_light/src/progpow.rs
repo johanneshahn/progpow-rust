@@ -122,8 +122,6 @@ fn keccak_f800(header_hash: H256, nonce: u64, result: [u32; 8], st: &mut [u32; 2
 	for r in 0..22 {
 		keccak_f800_round(st, r);
 	}
-
-	println!("keck: {:?}", st);
 }
 
 pub fn keccak_f800_short(header_hash: H256, nonce: u64, result: [u32; 8]) -> u64 {

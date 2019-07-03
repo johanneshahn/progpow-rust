@@ -33,7 +33,21 @@ fn generate_bindings(out_dir: &str) {
 }
 
 fn compile_cmake() {
-	cmake::Config::new("lib").build_target("").build();
+	let mut make = cmake::Config::new("lib");
+
+	if cfg!(feature = "cuda") {
+		make.define("ETHASHCUDA","ON");
+	}else{
+		make.define("ETHASHCUDA","OFF");
+	}
+
+	if cfg!(feature = "ocl") {
+		make.define("ETHASHCL","ON");
+	}else{
+		make.define("ETHASHCL","OFF");
+	}
+
+	make.build_target("").build();
 }
 
 fn exec_if_newer<F: Fn()>(inpath: &str, outpath: &str, build: F) {

@@ -13,7 +13,7 @@ extern "C" {
         header_size: usize,
         height: u64,
         epoch: i32,
-        boundary: u64,
+        target: u64,
     );
 }
 

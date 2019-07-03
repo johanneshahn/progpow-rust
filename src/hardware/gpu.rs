@@ -25,12 +25,12 @@ impl PpCompute for PpGPU {
         Ok(())
     }
 
-    fn verify(&self, header_hash: &[u8; 32], height: u64, nonce: u64) -> Result<([u32; 8], [u32; 8]), ProgPowError> {
+    fn verify(&self, header: &[u8; 32], height: u64, nonce: u64) -> Result<([u32; 8], [u32; 8]), ProgPowError> {
         unimplemented!()
     }
 
-    fn compute(&self, header: &[u8], height: u64, epoch: i32, boundary: u64) {
-        self.gpu.compute(header, height, epoch, boundary);
+    fn compute(&self, header: [u8; 32], height: u64, epoch: i32, target: u64) {
+        self.gpu.compute(header, height, epoch, target);
     }
 
     fn hardware(&self) -> Hardware {

@@ -4,6 +4,8 @@ extern crate lazy_static;
 extern crate bigint;
 
 extern crate progpow_cpu;
+
+#[cfg(feature="gpu")]
 extern crate progpow_gpu;
 
 pub mod types;
@@ -14,10 +16,8 @@ mod test {
     use super::*;
 
     use bigint::uint::U256;
-
+    use hardware::PpCPU;
     use types::PpCompute;
-    use hardware::{PpCPU, PpGPU};
-    use progpow_gpu::utils::get_gpu_solution;
 
     #[test]
     fn test_compute_cpu() {
@@ -32,17 +32,21 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature="gpu")]
     fn test_compute_gpu() {
+        use hardware::PpGPU;
+        use progpow_gpu::utils::get_gpu_solution;
+
         let header = [20u8; 32];
         let epoch: i32 = 0;
         let height: u64 = 1;
-        let boundary: u64 = 100000;
+        let boundary: u64 = 100000000;
 
         let mut difficulty: U256 = U256::max_value();
         difficulty = difficulty / U256::from(boundary);
         let target = difficulty >> 192;
 
-        let (nonce, mix) = get_gpu_solution(&header, height, epoch, boundary);
+        let (nonce, mix) = get_gpu_solution(header.clone(), height, epoch, boundary);
         let cpu = PpCPU::new();
         let (value, mix_hash) = cpu.verify(&header, height, nonce).unwrap();
 

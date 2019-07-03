@@ -7,15 +7,16 @@ using namespace eth;
 
 class Work {
 public:
-    h256 header;
-    h256 boundary;
+    h256 *header;
     uint64_t height;
     int epoch;
     uint64_t startNonce = 0;
+    uint64_t target;
 
-    Work(uint64_t height, h256 boundary, uint64_t startNonce, int epoch) {
+    Work(uint64_t height, uint64_t startNonce, int epoch, uint64_t target) {
+        this->header = new h256{0};
         this->height = height;
-        this->boundary = boundary;
+        this->target = target;
         this->startNonce = startNonce;
         this->epoch = epoch;
     };

@@ -85,9 +85,9 @@ public:
 	}
 	static void setCLKernel(unsigned _clKernel) { s_clKernelName = _clKernel == 1 ? CLKernelName::Experimental : CLKernelName::Stable; }
 
-	bool init(int epoch, uint64_t block_number, bool new_epoch, bool new_period);
+	bool init(int epoch, uint64_t block_number);
 
-	void compute(const void* header, size_t header_size, uint64_t height, int epoch, uint64_t boundary);
+	void compute(const void* header, size_t header_size, uint64_t height, int epoch, uint64_t target);
 	bool get_solutions(void* data);
 
 private:

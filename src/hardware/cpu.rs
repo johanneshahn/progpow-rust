@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::types::{H256, PpCompute, ProgPowError, Hardware};
-use progpow_cpu::cache::{NodeCacheBuilder};
+use progpow_cpu::cache::{NodeCacheBuilder, OptimizeFor};
 use progpow_cpu::compute::{light_compute, PoW};
 
 const CACHE_DIR: &str = "./cache";
@@ -13,7 +13,7 @@ pub struct PpCPU {
 impl PpCPU {
     pub fn new() -> Self {
         PpCPU {
-            cache_builder: NodeCacheBuilder::new(None),
+            cache_builder: NodeCacheBuilder::new(OptimizeFor::Memory),
         }
     }
 }
@@ -26,7 +26,7 @@ impl PpCompute for PpCPU {
         Ok(light.compute(&header_hash, nonce, height))
     }
 
-    fn compute(&self, header: &[u8], height: u64, epoch: i32, boundary: u64) {
+    fn compute(&self, header: [u8; 32], height: u64, epoch: i32, boundary: u64) {
         unimplemented!()
     }
 

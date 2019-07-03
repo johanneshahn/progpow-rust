@@ -26,16 +26,15 @@ impl GPU {
         let driver = self.driver.clone() as u32;
 
         let miner = unsafe { 
-            let miner = progpow_gpu_init(0, driver);
             progpow_gpu_configure(0);
-            miner
+            progpow_gpu_init(0, driver)
         };
 
         self.miner = Some(miner);
         self.miner
     }
 
-    pub fn compute(&self, hash: &[u8], height: u64, epoch: i32, boundary: u64) -> Result<(), &str> {
+    pub fn compute(&self, hash: [u8; 32], height: u64, epoch: i32, target: u64) -> Result<(), &str> {
         if let None = self.miner {
             return Err(MINER_UNINITIALIZED);
         }
@@ -47,7 +46,7 @@ impl GPU {
                 miner,
                 hash.as_ptr() as *const c_void,
                 hash.len() as usize,
-                height, epoch, boundary);
+                height, epoch, target);
         }
 
         Ok(())

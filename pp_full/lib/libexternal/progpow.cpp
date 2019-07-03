@@ -60,6 +60,12 @@ extern "C" {
     void* progpow_gpu_init(unsigned device, unsigned driver) {
         void* miner = NULL;
 
+        #if ETH_ETHASHCUDA
+        if (driver == DRIVER_CUDA){
+            miner = (void*)new CUDAMiner(device);
+        }
+        #endif
+
         #if ETH_ETHASHCL
         if (driver == DRIVER_OCL){
             miner = (void*)new CLMiner(device);
@@ -93,6 +99,9 @@ extern "C" {
         if (miner != NULL){
             #if ETH_ETHASHCL
                 free((CLMiner*) miner);
+            #endif
+            #if ETH_ETHASHCUDA
+                free((CUDAMiner*) miner);
             #endif
             return true;
         }

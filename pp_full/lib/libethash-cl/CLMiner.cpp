@@ -268,11 +268,11 @@ unsigned CLMiner::s_platformId = 0;
 unsigned CLMiner::s_numInstances = 0;
 vector<int> CLMiner::s_devices(MAX_MINERS, -1);
 
-CLMiner::CLMiner(unsigned _index): current(0,h256{0},0,-1) {
+CLMiner::CLMiner(unsigned _index): current(0,0,-1,0) {
 	index = _index;
 }
 
-void CLMiner::compute(const void* header, size_t header_size, uint64_t height, int epoch, uint64_t boundary)
+void CLMiner::compute(const void* header, size_t header_size, uint64_t height, int epoch, uint64_t target)
 {
 	uint32_t const c_zero = 0;
 	uint64_t startNonce = 0;
@@ -280,23 +280,21 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 	if (current.height != height || current.epoch != epoch) {
 		if (current.epoch != epoch){
 			// initialize dag for the epoch
-			init(epoch, height, true, true);
+			init(epoch, height);
 		}
-
+		
+		current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
 		current.startNonce = startNonce;
 		current.height = height;
-		current.header = h256 { (const uint8_t*)header, h256::ConstructFromPointer };
-		current.boundary = (h256)(u256)((bigint(1) << 256) / boundary);
+		current.target = target;
 		current.epoch = epoch;
 
-		const uint64_t target = (uint64_t)(u64)((u256)current.boundary >> 192);
-		assert(target > 0);
-
 		// Update header constant buffer.
-		m_queue.enqueueWriteBuffer(m_header, CL_FALSE, 0, current.header.size, current.header.data());
-		m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
+		m_queue.enqueueWriteBuffer(m_header, CL_FALSE, 0, current.header->size, current.header->data());
 
 		// clean the return buffer (g_output)
+		m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
+
 		m_searchKernel.setArg(0, m_searchBuffer);
 
 		//set difficulty to kernel
@@ -331,7 +329,7 @@ bool CLMiner::get_solutions(void* data)
 		m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
 
 		memcpy((uint8_t*)data, &nonce, sizeof(uint64_t));
-		memcpy(((uint8_t*)data) + sizeof(uint64_t), results + 2, sizeof(uint32_t) * 8); 
+		memcpy(((uint8_t*)data) + sizeof(uint64_t), results + 2, sizeof(uint32_t) * 8);
 
 		return true;
 	}
@@ -348,7 +346,7 @@ unsigned CLMiner::getNumDevices()
 	vector<cl::Device> devices = getDevices(platforms, s_platformId);
 	if (devices.empty())
 	{
-		cwarn << "No OpenCL devices found.";
+		//cwarn << "No OpenCL devices found.";
 		return 0;
 	}
 	return devices.size();
@@ -371,7 +369,7 @@ bool CLMiner::configureGPU(
 	s_initialGlobalWorkSize = _globalWorkSizeMultiplier * _localWorkSize;
 
 	uint64_t dagSize = ethash_get_datasize(_currentBlock);
-	cwarn <<"data_size: " << dagSize;
+	//cwarn <<"data_size: " << dagSize;
 
 	vector<cl::Platform> platforms = getPlatforms();
 	if (platforms.empty())
@@ -386,26 +384,24 @@ bool CLMiner::configureGPU(
 		device.getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &result);
 		if (result >= dagSize)
 		{
-			cnote <<
+			/*cnote <<
 				"Found suitable OpenCL device [" << device.getInfo<CL_DEVICE_NAME>()
-												 << "] with " << result << " bytes of GPU memory";
+												 << "] with " << result << " bytes of GPU memory";*/
 			return true;
 		}
 
-		cnote <<
+		/*cnote <<
 			"OpenCL device " << device.getInfo<CL_DEVICE_NAME>()
 							 << " has insufficient GPU memory." << result <<
-							 " bytes of memory found < " << dagSize << " bytes of memory required";
+							 " bytes of memory found < " << dagSize << " bytes of memory required";*/
 	}
 
-	cout << "No GPU device with sufficient memory was found. Can't GPU mine. Remove the -G argument" << endl;
+	//cout << "No GPU device with sufficient memory was found. Can't GPU mine. Remove the -G argument" << endl;
 	return false;
 }
 
-bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_period)
+bool CLMiner::init(int epoch, uint64_t block_number)
 {
-	assert(new_epoch || new_period);
-
 	EthashAux::LightType light = EthashAux::light(epoch);
 
 	// get all platforms
@@ -445,13 +441,13 @@ bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_pe
 			}
 		}
 
-		cwarn << "platformId: " << platformId;
+		//cwarn << "platformId: " << platformId;
 
 		// get GPU device of the default platform
 		vector<cl::Device> devices = getDevices(platforms, platformIdx);
 		if (devices.empty())
 		{
-			ETHCL_LOG("No OpenCL devices found.");
+			//ETHCL_LOG("No OpenCL devices found.");
 			return false;
 		}
 
@@ -461,7 +457,7 @@ bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_pe
 		//m_hwmoninfo.deviceIndex = deviceId % devices.size();
 		cl::Device& device = devices[deviceId % devices.size()];
 		string device_version = device.getInfo<CL_DEVICE_VERSION>();
-		ETHCL_LOG("Device:   " << device.getInfo<CL_DEVICE_NAME>() << " / " << device_version);
+		//ETHCL_LOG("Device:   " << device.getInfo<CL_DEVICE_NAME>() << " / " << device_version);
 
 		string clVer = device_version.substr(7, 3);
 		if (clVer == "1.0" || clVer == "1.1")
@@ -531,11 +527,11 @@ bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_pe
 		try
 		{
 			program.build({device}, options);
-			cllog << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+			//cllog << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
 		}
 		catch (cl::Error const&)
 		{
-			cwarn << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+			//cwarn << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
 			return false;
 		}
 
@@ -544,29 +540,29 @@ bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_pe
 		device.getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &result);
 		if (result < dagBytes)
 		{
-			cnote <<
+			/*cnote <<
 			"OpenCL device " << device.getInfo<CL_DEVICE_NAME>()
 							 << " has insufficient GPU memory." << result <<
-							 " bytes of memory found < " << dagBytes << " bytes of memory required";	
+							 " bytes of memory found < " << dagBytes << " bytes of memory required";	*/
 			return false;
 		}
 
 		// create buffer for dag
 		try
 		{
-			cllog << "Creating light cache buffer, size" << light->data().size();
+			//cllog << "Creating light cache buffer, size" << light->data().size();
 			m_light = cl::Buffer(m_context, CL_MEM_READ_ONLY, light->data().size());
-			cllog << "Creating DAG buffer, size" << dagBytes;
+			//cllog << "Creating DAG buffer, size" << dagBytes;
 			m_dag = cl::Buffer(m_context, CL_MEM_READ_ONLY, dagBytes);
-			cllog << "Loading kernels";
+			//cllog << "Loading kernels";
 			m_searchKernel = cl::Kernel(program, "ethash_search");
 			m_dagKernel = cl::Kernel(program, "ethash_calculate_dag_item");
-			cllog << "Writing light cache buffer";
+			//cllog << "Writing light cache buffer";
 			m_queue.enqueueWriteBuffer(m_light, CL_TRUE, 0, light->data().size(), light->data().data());
 		}
 		catch (cl::Error const& err)
 		{
-			cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
+			//cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
 			return false;
 		}
 		// create buffer for header
@@ -576,9 +572,6 @@ bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_pe
 		m_searchKernel.setArg(1, m_header);
 		m_searchKernel.setArg(2, m_dag);
 		m_searchKernel.setArg(5, 0);
-
-		if (!new_epoch)
-			return true;
 
 		// create mining buffers
 		ETHCL_LOG("Creating mining buffer");
@@ -608,7 +601,7 @@ bool CLMiner::init(int epoch, uint64_t block_number, bool new_epoch, bool new_pe
 	}
 	catch (cl::Error const& err)
 	{
-		cwarn << ethCLErrorHelper("OpenCL init failed", err);
+		//cwarn << ethCLErrorHelper("OpenCL init failed", err);
 		return false;
 	}
 	return true;
