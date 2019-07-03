@@ -7,6 +7,12 @@ include(CableBuildType)
 include(CableToolchains)
 include(HunterGate)
 
+if(NOT APPLE)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpic")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic")
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
 include(defaults/HunterCacheServers)
 
 cable_configure_toolchain(DEFAULT cxx11)
