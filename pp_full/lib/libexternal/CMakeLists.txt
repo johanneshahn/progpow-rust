@@ -2,7 +2,7 @@ set(SOURCES progpow.h progpow.cpp)
 
 include_directories(BEFORE ..)
 
-add_library(ppow SHARED ${SOURCES})
+add_library(ppow STATIC ${SOURCES})
 target_link_libraries(ppow ethcore ethash progpow)
 
 if(ETHASHCL)
