@@ -3,7 +3,6 @@ name = "progpow_gpu"
 version = "0.1.0"
 authors = ["Brick Abode <a@a.com>"]
 build = "build.rs"
-workspace = ".."
 
 [dependencies]
 libc = "0.2.51"

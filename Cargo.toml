@@ -3,9 +3,6 @@ name = "progpow"
 version = "0.1.0"
 authors = ["Brick Abode <a@a.com>"]
 
-[workspace]
-members = ["pp_light", "pp_full"]
-
 [dependencies]
 libc = "0.2.58"
 bigint = "4.4.1"
