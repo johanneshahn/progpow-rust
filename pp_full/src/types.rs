@@ -26,7 +26,7 @@ impl GPU {
         let driver = self.driver.clone() as u32;
 
         let miner = unsafe { 
-            progpow_gpu_configure(0);
+            progpow_gpu_configure(1);
             progpow_gpu_init(0, driver)
         };
 

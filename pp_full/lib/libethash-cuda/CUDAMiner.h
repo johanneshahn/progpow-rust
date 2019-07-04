@@ -17,20 +17,41 @@ along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <iostream>
+#include <vector>
 #include <time.h>
+#include <fstream>
 #include <functional>
 #include <libethash/ethash.h>
+#include <libethcore/EthashAux.h>
 #include <libdevcore/Worker.h>
 #include <libethcore/miner.h>
+#include <libethcore/work.h>
 #include "libethash/internal.h"
 #include <libprogpow/ProgPow.h>
 #include <cuda.h>
 #include "CUDAMiner_cuda.h"
 
+using namespace std;
+
+#define DAG_LOAD_MODE_PARALLEL	 0
+#define DAG_LOAD_MODE_SEQUENTIAL 1
+#define DAG_LOAD_MODE_SINGLE	 2
+
 namespace dev
 {
 namespace eth
 {
+
+struct Solution {
+	uint64_t nonce;
+	h256 mixHash;
+
+	Solution(uint64_t n, h256 mix){
+		nonce = n;
+		mixHash = mix;
+	}
+};
 
 class CUDAMiner: public Miner
 {
@@ -38,8 +59,8 @@ class CUDAMiner: public Miner
 public:
 	Work current;
 
-	CUDAMiner(FarmFace& _farm, unsigned _index);
-	~CUDAMiner() override;
+	CUDAMiner(unsigned index);
+	~CUDAMiner();
 
 	static unsigned instances()
 	{
@@ -88,8 +109,7 @@ public:
 		uint8_t const* header,
 		uint64_t target,
 		bool _ethStratum,
-		uint64_t _startN,
-		const Work &w);
+		uint64_t _startN);
 
 	/* -- default values -- */
 	/// Default value of the block size. Also known as workgroup size.
@@ -99,16 +119,23 @@ public:
 	// default number of CUDA streams
 	static unsigned const c_defaultNumStreams;
 
+	static unsigned s_dagCreateDevice;
+	static unsigned s_dagLoadMode;
+
 	void compute(const void* header, uint64_t size, uint64_t height, int epoch, uint64_t target) override;
 	bool get_solutions(void* data) override;
 
+	static uint8_t* s_dagInHostMemory;
+
 protected:
-	void kick_miner() override;
+	void kick_miner();
 
 private:
-	atomic<bool> m_new_work = {false};
+	//atomic<bool> m_new_work = {false};
 
 	bool init(int epoch);
+
+	uint32_t index;
 
 	hash32_t m_current_header;
 	uint64_t m_current_target;
@@ -118,9 +145,11 @@ private:
 
 	///Constants on GPU
 	hash64_t* m_dag = nullptr;
-	std::vector<hash64_t*> m_light;
+	std::vector<hash64_t*> *m_light;
 	uint32_t m_dag_elms = -1;
 	uint32_t m_device_num;
+
+	Solution* solution = nullptr;
 
 	CUmodule m_module;
 	CUfunction m_kernel;

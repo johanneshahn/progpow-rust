@@ -50,10 +50,46 @@ inline void cl_configure(int devicesCount, int m_dagLoadMode, int m_dagCreateDev
 
 extern "C" {
     void progpow_gpu_configure(uint32_t devicesCount) {
+	    unsigned m_miningThreads = UINT_MAX;
+        int m_dagLoadMode = DAG_LOAD_MODE_SEQUENTIAL;
+        int m_dagCreateDevice = 1;
+
         #if ETH_ETHASHCL
-            cl_configure(devicesCount, DAG_LOAD_MODE_SEQUENTIAL, 1);
-        #else
-            std::cout << ERROR_NOT_GPU << std::endl;
+            cl_configure(devicesCount, m_dagLoadMode, m_dagCreateDevice);
+        #endif 
+
+        #if ETH_ETHASHCUDA
+        unsigned m_cudaDeviceCount = devicesCount;
+        vector<unsigned> m_cudaDevices = vector<unsigned>(MAX_MINERS, -1);
+        unsigned m_numStreams = CUDAMiner::c_defaultNumStreams;
+        unsigned m_cudaSchedule = 4; // sync
+        unsigned m_cudaGridSize = CUDAMiner::c_defaultGridSize;
+        unsigned m_cudaBlockSize = CUDAMiner::c_defaultBlockSize;
+        unsigned m_parallelHash = 4;
+
+        if (m_cudaDeviceCount > 0)
+        {
+            CUDAMiner::setDevices(m_cudaDevices, m_cudaDeviceCount);
+            m_miningThreads = m_cudaDeviceCount;
+        }
+
+        CUDAMiner::listDevices();
+
+        CUDAMiner::setNumInstances(m_miningThreads);
+        if (!CUDAMiner::configureGPU(
+                m_cudaBlockSize,
+                m_cudaGridSize,
+                m_numStreams,
+                m_cudaSchedule,
+                0,
+                m_dagLoadMode,
+                m_dagCreateDevice,
+                false,
+                false
+            ))
+            exit(1);
+
+        CUDAMiner::setParallelHash(m_parallelHash);
         #endif
     }
 

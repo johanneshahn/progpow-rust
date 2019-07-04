@@ -18,6 +18,7 @@ along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 #undef min
 #undef max
 
+#include <libethash/internal.h>
 #include "CUDAMiner.h"
 #include "CUDAMiner_kernel.h"
 #include <nvrtc.h>
@@ -25,6 +26,8 @@ along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 using namespace dev;
 using namespace eth;
+
+#define MAX_MINERS 4
 
 unsigned CUDAMiner::s_numInstances = 0;
 
@@ -47,25 +50,37 @@ struct CUDASwitchChannel: public LogChannel
 #define cudalog clog(CUDAChannel)
 #define cudaswitchlog clog(CUDASwitchChannel)
 
-CUDAMiner::CUDAMiner(FarmFace& _farm, unsigned _index) :
-	Miner("cuda-", _farm, _index),
-	m_light(getNumDevices()) {}
+CUDAMiner::CUDAMiner(unsigned _index) :
+	//m_light(getNumDevices()),
+	current(0,0,-1,0)
+{
+	index = _index;
+	m_light = new std::vector<hash64_t*>(getNumDevices());
+	/*printf("heuehue");
+	m_light = (hash64_t**)malloc(getNumDevices() * sizeof(hash64_t*));
+	printf("heuehue");*/
+}
 
 CUDAMiner::~CUDAMiner()
 {
-	stopWorking();
 	kick_miner();
 }
+
+uint8_t* CUDAMiner::s_dagInHostMemory = NULL;
 
 bool CUDAMiner::init(int epoch)
 {
 	try {
-		if (s_dagLoadMode == DAG_LOAD_MODE_SEQUENTIAL)
+		/*if (s_dagLoadMode == DAG_LOAD_MODE_SEQUENTIAL)
 			while (s_dagLoadIndex < index)
 				this_thread::sleep_for(chrono::milliseconds(100));
-		unsigned device = s_devices[index] > -1 ? s_devices[index] : index;
-
-		cnote << "Initialising miner " << index;
+		*/
+		//int* d = s_devices.data();
+		int d = s_devices[index];
+	    int device = d > -1 ? d : (int)index;
+		//unsigned device = 0;
+		//cnote << "Initialising miner " << index;
+		//printf("Initializing miner\n");
 
 		EthashAux::LightType light;
 		light = EthashAux::light(epoch);
@@ -73,7 +88,8 @@ bool CUDAMiner::init(int epoch)
 
 		cuda_init(getNumDevices(), light->light, lightData.data(), lightData.size(),
 			device, (s_dagLoadMode == DAG_LOAD_MODE_SINGLE), s_dagInHostMemory, s_dagCreateDevice);
-		s_dagLoadIndex++;
+		
+		/*s_dagLoadIndex++;
     
 		if (s_dagLoadMode == DAG_LOAD_MODE_SINGLE)
 		{
@@ -82,77 +98,81 @@ bool CUDAMiner::init(int epoch)
 				// all devices have loaded DAG, we can free now
 				delete[] s_dagInHostMemory;
 				s_dagInHostMemory = NULL;
-				cnote << "Freeing DAG from host";
+				//cnote << "Freeing DAG from host";
 			}
-		}
+		}*/
 		return true;
 	}
 	catch (std::runtime_error const& _e)
 	{
-		cwarn << "Error CUDA mining: " << _e.what();
-		if(s_exit)
-			exit(1);
+		printf("Error CUDA mining: %s", _e.what());
 		return false;
 	}
 }
 
 void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t height, int epoch, uint64_t target)
 {
-	WorkPackage current;
-	current.header = h256{1u};
-
 	try
 	{
-
-		current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
-		current.startNonce = startNonce;
-		current.height = height;
-		current.target = target;
-		current.epoch = epoch;
-
-		uint64_t period_seed = w.height / PROGPOW_PERIOD;
-
-		if (current.height != w.height || current.epoch != w.epoch || old_period_seed != period_seed)
+		if (current.height != height || current.epoch != epoch)
 		{
+			current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
+			current.startNonce = 0;
+			current.height = height;
+			current.target = target;
 
-			if (current.epoch != w.epoch){
-				if(!init(w.epoch))
-					break;
+			if (current.epoch != epoch){
+				if(!init(epoch))
+					exit(1);
 
-				uint64_t dagBytes = ethash_get_datasize(w.height);
+				uint64_t dagBytes = ethash_get_datasize(height);
 				uint32_t dagElms  = (unsigned)(dagBytes / (PROGPOW_LANES * PROGPOW_DAG_LOADS * 4));
-				compileKernel(w.height, dagElms);
+				compileKernel(height, dagElms);
 			}
+
+			current.epoch = epoch;
 		}
-		uint64_t upper64OfBoundary = (uint64_t)(u64)((u256)current.boundary >> 192);
 		uint64_t startN = current.startNonce;
 		/*if (current.exSizeBits >= 0)
 		{
 			// this can support up to 2^c_log2Max_miners devices
 			startN = current.startNonce | ((uint64_t)index << (64 - LOG2_MAX_MINERS - current.exSizeBits));
 		}*/
-		search(current.header.data(), upper64OfBoundary, false, startN);
-		
-		// Reset miner and stop working
-		CUDA_SAFE_CALL(cudaDeviceReset());
+		search(current.header->data(), target, false, startN);
 	}
 	catch (cuda_runtime_error const& _e)
 	{
 		cwarn << "Fatal GPU error: " << _e.what();
-		cwarn << "Terminating.";
+		//cwarn << "Terminating.";
 		exit(-1);
 	}
 	catch (std::runtime_error const& _e)
 	{
 		cwarn << "Error CUDA mining: " << _e.what();
-		if(s_exit)
-			exit(1);
+		//if(s_exit)
+		exit(1);
 	}
+}
+
+bool CUDAMiner::get_solutions(void* data) {
+
+	if (solution != nullptr){
+		memcpy((uint8_t*)data, &solution->nonce, sizeof(uint64_t));
+		memcpy(((uint8_t*)data) + sizeof(uint64_t), (const void*)solution->mixHash.data(), sizeof(uint32_t) * 8);
+		free(solution);
+		solution = nullptr;
+		return true;
+	}
+
+	return false;
 }
 
 void CUDAMiner::kick_miner()
 {
-	m_new_work.store(true, std::memory_order_relaxed);
+	// Reset miner and stop working
+	CUDA_SAFE_CALL(cudaDeviceReset());
+
+	//m_new_work.store(true, std::memory_order_relaxed);
 }
 
 void CUDAMiner::setNumInstances(unsigned _instances)
@@ -168,8 +188,10 @@ void CUDAMiner::setDevices(const vector<unsigned>& _devices, unsigned _selectedD
 
 unsigned CUDAMiner::getNumDevices()
 {
+	
 	int deviceCount = -1;
 	cudaError_t err = cudaGetDeviceCount(&deviceCount);
+
 	if (err == cudaSuccess)
 		return deviceCount;
 
@@ -177,12 +199,18 @@ unsigned CUDAMiner::getNumDevices()
 	{
 		int driverVersion = -1;
 		cudaDriverGetVersion(&driverVersion);
+
 		if (driverVersion == 0)
-			throw std::runtime_error{"No CUDA driver found"};
-		throw std::runtime_error{"Insufficient CUDA driver: " + std::to_string(driverVersion)};
+			printf("No Driver Found\n");
+			//throw std::runtime_error{"No CUDA driver found"};
+		
+		printf("Insufficient CUDA driver: %s", std::to_string(driverVersion));
+		//throw std::runtime_error{"Insufficient CUDA driver: " + std::to_string(driverVersion)};
 	}
 
-	throw std::runtime_error{cudaGetErrorString(err)};
+	printf("s CUDA: %s\n", cudaGetErrorString(err));
+	exit(1);
+	//throw std::runtime_error{cudaGetErrorString(err)};*/
 }
 
 void CUDAMiner::listDevices()
@@ -205,9 +233,9 @@ void CUDAMiner::listDevices()
 	}
 	catch(std::runtime_error const& err)
 	{
-		cwarn << "CUDA error: " << err.what();
-		if(s_exit)
-			exit(1);
+		printf("CUDA error: %s", err.what());
+		//if(s_exit)
+		exit(1);
 	}
 }
 
@@ -225,7 +253,7 @@ bool CUDAMiner::configureGPU(
 {
 	s_dagLoadMode = _dagLoadMode;
 	s_dagCreateDevice = _dagCreateDevice;
-	s_exit  = _exit;
+	//s_exit  = _exit;
 
 	if (!cuda_configureGPU(
 		getNumDevices(),
@@ -252,6 +280,8 @@ void CUDAMiner::setParallelHash(unsigned _parallelHash)
 unsigned const CUDAMiner::c_defaultBlockSize = 512;
 unsigned const CUDAMiner::c_defaultGridSize = 1024; // * CL_DEFAULT_LOCAL_WORK_SIZE
 unsigned const CUDAMiner::c_defaultNumStreams = 2;
+unsigned CUDAMiner::s_dagCreateDevice = 0;
+unsigned CUDAMiner::s_dagLoadMode = 0;
 
 bool CUDAMiner::cuda_configureGPU(
 	size_t numDevices,
@@ -306,8 +336,8 @@ bool CUDAMiner::cuda_configureGPU(
 	catch (std::runtime_error const& _e)
 	{
 		cwarn << "Error CUDA mining: " << _e.what();
-		if(s_exit)
-			exit(1);
+		//if(s_exit)
+		exit(1);
 		return false;
 	}
 }
@@ -334,16 +364,12 @@ bool CUDAMiner::cuda_init(
 		if (numDevices == 0)
 			return false;
 
-		// use selected device
 		m_device_num = _deviceId < numDevices -1 ? _deviceId : numDevices - 1;
-		m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
-		m_hwmoninfo.indexSource = HwMonitorIndexSource::CUDA;
-		m_hwmoninfo.deviceIndex = m_device_num;
 
 		cudaDeviceProp device_props;
 		CUDA_SAFE_CALL(cudaGetDeviceProperties(&device_props, m_device_num));
 
-		cudalog << "Using device: " << device_props.name << " (Compute " + to_string(device_props.major) + "." + to_string(device_props.minor) + ")";
+		//cudalog << "Using device: " << device_props.name << " (Compute " + to_string(device_props.major) + "." + to_string(device_props.minor) + ")";
 
 		m_search_buf = new volatile search_results *[s_numStreams];
 		m_streams = new cudaStream_t[s_numStreams];
@@ -353,7 +379,10 @@ bool CUDAMiner::cuda_init(
 		uint32_t lightWords = (unsigned)(_lightBytes / sizeof(node));
 
 		CUDA_SAFE_CALL(cudaSetDevice(m_device_num));
-		cudalog << "Set Device to current";
+		//cudalog << "Set Device to current";
+
+		hash64_t** data = m_light->data();
+
 		if(dagElms != m_dag_elms || !m_dag)
 		{
 			//Check whether the current device has sufficient memory every time we recreate the dag
@@ -371,20 +400,21 @@ bool CUDAMiner::cuda_init(
 			cuCtxCreate(&context, s_scheduleFlag, device);
 			//We need to reset the light and the Dag for the following code to reallocate
 			//since cudaDeviceReset() frees all previous allocated memory
-			m_light[m_device_num] = nullptr;
+			*(data + m_device_num) = nullptr;
 			m_dag = nullptr; 
 		}
+	
 		// create buffer for cache
 		hash64_t * dag = m_dag;
-		hash64_t * light = m_light[m_device_num];
+		hash64_t * light = *(data + m_device_num);
 
 		if(!light){ 
-			cudalog << "Allocating light with size: " << _lightBytes;
+			//cudalog << "Allocating light with size: " << _lightBytes;
 			CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&light), _lightBytes));
 		}
 		// copy lightData to device
 		CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(light), _lightData, _lightBytes, cudaMemcpyHostToDevice));
-		m_light[m_device_num] = light;
+		*(data + m_device_num) = light;
 		
 		if(dagElms != m_dag_elms || !dag) // create buffer for dag
 			CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&dag), dagBytes));
@@ -392,7 +422,7 @@ bool CUDAMiner::cuda_init(
 		if(dagElms != m_dag_elms || !dag)
 		{
 			// create mining buffers
-			cudalog << "Generating mining buffers";
+			//cudalog << "Generating mining buffers";
 			for (unsigned i = 0; i != s_numStreams; ++i)
 			{
 				CUDA_SAFE_CALL(cudaMallocHost(&m_search_buf[i], sizeof(search_results)));
@@ -442,15 +472,14 @@ cpyDag:
 	}
 	catch (cuda_runtime_error const& _e)
 	{
-		cwarn << "Fatal GPU error: " << _e.what();
-		cwarn << "Terminating.";
+		//cwarn << "Fatal GPU error: " << _e.what();
+		//cwarn << "Terminating.";
 		exit(-1);
 	}
 	catch (std::runtime_error const& _e)
 	{
-		cwarn << "Error CUDA mining: " << _e.what();
-		if(s_exit)
-			exit(1);
+		//cwarn << "Error CUDA mining: " << _e.what();
+		exit(1);
 		return false;
 	}
 }
@@ -541,9 +570,9 @@ void CUDAMiner::compileKernel(
 	// Find the mangled name
 	const char* mangledName;
 	NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, name, &mangledName));
-	cudalog << "Mangled name: " << mangledName;
+	//cudalog << "Mangled name: " << mangledName;
 	CU_SAFE_CALL(cuModuleGetFunction(&m_kernel, m_module, mangledName));
-	cudalog << "done compiling";
+	//cudalog << "done compiling";
 	// Destroy the program.
 	NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
 }
@@ -552,8 +581,7 @@ void CUDAMiner::search(
 	uint8_t const* header,
 	uint64_t target,
 	bool _ethStratum,
-	uint64_t _startN,
-	const Work& w)
+	uint64_t _startN)
 {
 	bool initialize = false;
 	if (memcmp(&m_current_header, header, sizeof(hash32_t)))
@@ -587,7 +615,7 @@ void CUDAMiner::search(
 	{
 		if (initialize)
 		{
-			m_current_nonce = get_start_nonce();
+			m_current_nonce = 0;//get_start_nonce();
 			m_current_index = 0;
 			CUDA_SAFE_CALL(cudaDeviceSynchronize());
 			for (unsigned int i = 0; i < s_numStreams; i++)
@@ -595,74 +623,52 @@ void CUDAMiner::search(
 		}
 	}
 	const uint32_t batch_size = s_gridSize * s_blockSize;
-	while (true)
+
+	m_current_index++;
+	m_current_nonce += batch_size;
+	auto stream_index = m_current_index % s_numStreams;
+	cudaStream_t stream = m_streams[stream_index];
+	volatile search_results* buffer = m_search_buf[stream_index];
+	uint32_t found_count = 0;
+	uint64_t nonces[SEARCH_RESULTS];
+	h256 mixes[SEARCH_RESULTS];
+	uint64_t nonce_base = m_current_nonce - s_numStreams * batch_size;
+	if (m_current_index >= s_numStreams)
 	{
-		m_current_index++;
-		m_current_nonce += batch_size;
-		auto stream_index = m_current_index % s_numStreams;
-		cudaStream_t stream = m_streams[stream_index];
-		volatile search_results* buffer = m_search_buf[stream_index];
-		uint32_t found_count = 0;
-		uint64_t nonces[SEARCH_RESULTS];
-		h256 mixes[SEARCH_RESULTS];
-		uint64_t nonce_base = m_current_nonce - s_numStreams * batch_size;
-		if (m_current_index >= s_numStreams)
-		{
-			CUDA_SAFE_CALL(cudaStreamSynchronize(stream));
-			found_count = buffer->count;
-			if (found_count) {
-				buffer->count = 0;
-				if (found_count > SEARCH_RESULTS)
-					found_count = SEARCH_RESULTS;
-				for (unsigned int j = 0; j < found_count; j++) {
-					nonces[j] = nonce_base + buffer->result[j].gid;
-					if (s_noeval)
-						memcpy(mixes[j].data(), (void *)&buffer->result[j].mix, sizeof(buffer->result[j].mix));
-				}
+		CUDA_SAFE_CALL(cudaStreamSynchronize(stream));
+		found_count = buffer->count;
+		if (found_count) {
+			buffer->count = 0;
+			if (found_count > SEARCH_RESULTS)
+				found_count = SEARCH_RESULTS;
+			for (unsigned int j = 0; j < found_count; j++) {
+				nonces[j] = nonce_base + buffer->result[j].gid;
+				if (s_noeval)
+					memcpy(mixes[j].data(), (void *)&buffer->result[j].mix, sizeof(buffer->result[j].mix));
 			}
 		}
-        bool hack_false = false;
-		void *args[] = {&m_current_nonce, &m_current_header, &m_current_target, &m_dag, &buffer, &hack_false};
-		CU_SAFE_CALL(cuLaunchKernel(m_kernel,
-			s_gridSize, 1, 1,   // grid dim
-			s_blockSize, 1, 1,  // block dim
-			0,					// shared mem
-			stream,				// stream
-			args, 0));          // arguments
-		if (m_current_index >= s_numStreams)
-		{
-            if (found_count)
-            {
-                for (uint32_t i = 0; i < found_count; i++)
-                    if (s_noeval)
-                        farm.submitProof(Solution{nonces[i], mixes[i], w, m_new_work});
-                    else
-                    {
-                        Result r = EthashAux::eval(w.epoch, w.header, nonces[i]);
-                        if (r.value < w.boundary)
-                            farm.submitProof(Solution{nonces[i], r.mixHash, w, m_new_work});
-                        else
-                        {
-                            farm.failedSolution();
-                            cwarn << "GPU gave incorrect result!";
-                        }
-                    }
-            }
+	}
+	bool hack_false = false;
+	void *args[] = {&m_current_nonce, &m_current_header, &m_current_target, &m_dag, &buffer, &hack_false};
+	CU_SAFE_CALL(cuLaunchKernel(m_kernel,
+		s_gridSize, 1, 1,   // grid dim
+		s_blockSize, 1, 1,  // block dim
+		0,					// shared mem
+		stream,				// stream
+		args, 0));          // arguments
 
-            addHashCount(batch_size);
-			bool t = true;
-			if (m_new_work.compare_exchange_strong(t, false)) {
-				cudaswitchlog << "Switch time "
-					<< std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - workSwitchStart).count()
-					<< "ms.";
-				break;
-			}
-			if (shouldStop())
-			{
-				m_new_work.store(false, std::memory_order_relaxed);
+	//printf("cuda index: %lu", m_current_nonce);
+	if (m_current_index >= s_numStreams)
+	{
+		if (found_count)
+		{
+			for (uint32_t i = 0; i < found_count; i++) {
+				printf("nonce: %lu\n", nonces[i]);
+				solution = new Solution(nonces[i], mixes[i]);
 				break;
 			}
 		}
 	}
 }
+
 

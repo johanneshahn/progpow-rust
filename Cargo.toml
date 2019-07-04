@@ -17,6 +17,7 @@ filetime = "0.2"
 
 [dependencies.progpow_gpu]
 path = "./pp_full"
+features = ['ocl']
 
 [features]
 gpu = []

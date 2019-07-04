@@ -34,6 +34,9 @@
 #define OPENCL_PLATFORM_CLOVER  3
 
 
+#define UINT_MAX 1000000
+
+
 using namespace std;
 
 namespace dev
