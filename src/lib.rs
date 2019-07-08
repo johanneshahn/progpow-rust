@@ -2,6 +2,7 @@ extern crate libc;
 #[macro_use]
 extern crate lazy_static;
 extern crate bigint;
+extern crate dirs;
 
 extern crate progpow_cpu;
 

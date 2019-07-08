@@ -8,6 +8,7 @@ libc = "0.2.58"
 bigint = "4.4.1"
 byteorder = "^0.5"
 lazy_static = "1"
+dirs = "1.0.3"
 progpow_cpu = { path = "./pp_light" }
 
 [build-dependencies]
