@@ -6,15 +6,17 @@ pub struct PpGPU {
 }
 
 impl PpGPU {
-	pub fn new() -> Self {
-		PpGPU {
-			gpu: GPU::new(Driver::OCL),
-		}
-	}
 
-	pub fn get_solutions(&self) -> Option<(u64, [u8; 32])> {
-		self.gpu.solutions().unwrap()
-	}
+    pub fn new(device: u32, driver: u8) -> Self {
+        let dr: Driver = Driver::from_u8(driver);
+        PpGPU {
+            gpu: GPU::new(device, dr)
+        }
+    }
+
+    pub fn get_solutions(&self) -> Option<(u64, [u8; 32])> {
+        self.gpu.solutions().unwrap()
+    }
 }
 
 impl PpCompute for PpGPU {

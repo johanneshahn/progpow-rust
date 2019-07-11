@@ -415,7 +415,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		unsigned platformIdx = min<unsigned>(s_platformId, platforms.size() - 1);
 
 		string platformName = platforms[platformIdx].getInfo<CL_PLATFORM_NAME>();
-		ETHCL_LOG("Platform: " << platformName);
+		//ETHCL_LOG("Platform: " << platformName);
 
 		int platformId = OPENCL_PLATFORM_UNKNOWN;
 		{
@@ -464,11 +464,11 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		{
 			if (platformId == OPENCL_PLATFORM_CLOVER)
 			{
-				ETHCL_LOG("OpenCL " << clVer << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!");
+				//ETHCL_LOG("OpenCL " << clVer << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!");
 			}
 			else
 			{
-				ETHCL_LOG("OpenCL " << clVer << " not supported - minimum required version is 1.2");
+				//ETHCL_LOG("OpenCL " << clVer << " not supported - minimum required version is 1.2");
 				return false;
 			}
 		}
@@ -566,7 +566,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 			return false;
 		}
 		// create buffer for header
-		ETHCL_LOG("Creating buffer for header.");
+		//ETHCL_LOG("Creating buffer for header.");
 		m_header = cl::Buffer(m_context, CL_MEM_READ_ONLY, 32);
 
 		m_searchKernel.setArg(1, m_header);
@@ -574,7 +574,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		m_searchKernel.setArg(5, 0);
 
 		// create mining buffers
-		ETHCL_LOG("Creating mining buffer");
+		//ETHCL_LOG("Creating mining buffer");
 		m_searchBuffer = cl::Buffer(m_context, CL_MEM_WRITE_ONLY, (c_maxSearchResults + 9) * sizeof(uint32_t));
 
 		uint32_t const work = (uint32_t)(dagBytes / sizeof(node));
@@ -597,7 +597,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 
 		auto dagTime = std::chrono::duration_cast<std::chrono::milliseconds>(endDAG-startDAG);
 		float gb = (float)dagBytes / (1024 * 1024 * 1024);
-		cnote << gb << " GB of DAG data generated in" << dagTime.count() << "ms.";
+		//cnote << gb << " GB of DAG data generated in" << dagTime.count() << "ms.";
 	}
 	catch (cl::Error const& err)
 	{
