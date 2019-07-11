@@ -22,4 +22,4 @@ features = ['ocl']
 optional = true
 
 [features]
-gpu = []
+gpu = ["progpow_gpu"]
