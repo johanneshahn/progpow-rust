@@ -36,11 +36,7 @@ fn compile_cmake() {
 	let mut make = cmake::Config::new("lib");
 
 	if cfg!(feature = "cuda") {
-		make.define("ETHASHCUDA", "ON")
-			.cflag("-I/opt/cuda/include")
-			.cflag("-I/usr/local/cuda/include")
-			.cxxflag("-I/usr/local/cuda/include")
-			.cxxflag("-I/opt/cuda/include");
+		make.define("ETHASHCUDA", "ON");
 	} else {
 		make.define("ETHASHCUDA", "OFF");
 	}
