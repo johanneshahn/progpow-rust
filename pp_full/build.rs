@@ -38,6 +38,8 @@ fn compile_cmake() {
 	if cfg!(feature = "cuda") {
 		make.define("ETHASHCUDA", "ON")
 			.cflag("-I/opt/cuda/include")
+			.cflag("-I/usr/local/cuda/include")
+			.cxxflag("-I/usr/local/cuda/include")
 			.cxxflag("-I/opt/cuda/include");
 	} else {
 		make.define("ETHASHCUDA", "OFF");
