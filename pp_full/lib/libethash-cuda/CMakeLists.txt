@@ -2,8 +2,8 @@
 # The normal build depends on it properly and if the kernel file is changed, then
 # a rebuild of libethash-cuda should be triggered
 
-set(CMAKE_C_COMPILER /usr/bin/gcc-8)
-set(CMAKE_CXX_COMPILER /usr/bin/g++-8)
+set(CMAKE_C_COMPILER /usr/bin/gcc-7)
+set(CMAKE_CXX_COMPILER /usr/bin/g++-7)
 set(CUDA_ARCH 35;37;53;60;61;62)
 
 add_custom_command(
