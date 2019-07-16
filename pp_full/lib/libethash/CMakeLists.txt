@@ -1,7 +1,6 @@
 if (NOT MSVC)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 endif()
-include_directories(/usr/local/cuda/include /opt/cuda/include)
 
 set(FILES
 	internal.c

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.3)
 
+include_directories(/usr/local/cuda/include /opt/cuda/include)
+
 include(cmake/cable/bootstrap.cmake)
 
 include(CableBuildInfo)
