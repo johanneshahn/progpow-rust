@@ -15,7 +15,7 @@ mod test {
     use super::*;
 
     #[test]
-    #[cfg(feature="ocl")]
+    #[cfg(feature="opencl")]
     fn test_compute_ocl() {
         let height: u64 = 1;
         let epoch: i32 = 0;

@@ -41,7 +41,7 @@ fn compile_cmake() {
 		make.define("ETHASHCUDA", "OFF");
 	}
 
-	if cfg!(feature = "ocl") {
+	if cfg!(feature = "opencl") {
 		make.define("ETHASHCL", "ON");
 	} else {
 		make.define("ETHASHCL", "OFF");
@@ -72,7 +72,7 @@ fn main() {
 
 	fail_on_empty_directory("lib");
 
-	exec_if_newer("lib", &format!("{}/build", out_dir), compile_cmake);
+	compile_cmake();
 	/*exec_if_newer("lib", &format!("{}/ffi.rs", out_dir), || {
 		//generate_bindings(&out_dir);
 	});*/

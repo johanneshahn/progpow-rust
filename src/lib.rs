@@ -6,8 +6,10 @@ extern crate dirs;
 
 extern crate progpow_cpu;
 
-#[cfg(feature = "gpu")]
-extern crate progpow_gpu;
+#[cfg(feature = "opencl")]
+extern crate progpow_gpu_opencl as progpow_gpu;
+#[cfg(feature = "cuda")]
+extern crate progpow_gpu_cuda as progpow_gpu;
 
 pub mod hardware;
 pub mod types;

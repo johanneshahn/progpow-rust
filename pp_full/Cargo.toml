@@ -16,4 +16,4 @@ filetime = "0.2"
 [features]
 default = []
 cuda = []
-ocl = []
+opencl = []
