@@ -10,8 +10,8 @@ include(CableToolchains)
 include(HunterGate)
 
 if(NOT APPLE)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpic -fPIC")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic -fPIC")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpic -fPIC" CACHE INTERNAL "")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic -fPIC" CACHE INTERNAL "")
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
