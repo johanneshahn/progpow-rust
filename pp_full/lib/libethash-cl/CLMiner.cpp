@@ -282,15 +282,11 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 			// initialize dag for the epoch
 			init(epoch, height);
 		}
-		
-		current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
+
 		current.startNonce = startNonce;
 		current.height = height;
 		current.target = target;
 		current.epoch = epoch;
-
-		// Update header constant buffer.
-		m_queue.enqueueWriteBuffer(m_header, CL_FALSE, 0, current.header->size, current.header->data());
 
 		// clean the return buffer (g_output)
 		m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
@@ -304,13 +300,16 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 		startNonce = current.startNonce;
 	}
 
-	// set nonce
+	current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
+
+	// Update header constant buffer.
+	m_queue.enqueueWriteBuffer(m_header, CL_FALSE, 0, current.header->size, current.header->data());
+
+	// set start nonce
 	m_searchKernel.setArg(3, startNonce);
 
 	// run search kernel
 	m_queue.enqueueNDRangeKernel(m_searchKernel, cl::NullRange, m_globalWorkSize, m_workgroupSize);
-
-	m_queue.finish();
 }
 
 bool CLMiner::get_solutions(void* data)
@@ -323,14 +322,12 @@ bool CLMiner::get_solutions(void* data)
 	if (results[0] > 0) {
 		uint64_t nonce = current.startNonce + results[1];
 
-		//cwarn << "nonce: " << nonce;
-		//cwarn << "header: " << current.header;
-
 		m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(c_zero), &c_zero);
 
 		memcpy((uint8_t*)data, &nonce, sizeof(uint64_t));
 		memcpy(((uint8_t*)data) + sizeof(uint64_t), results + 2, sizeof(uint32_t) * 8);
 
+		m_queue.finish();
 		return true;
 	}
 
@@ -531,7 +528,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		}
 		catch (cl::Error const&)
 		{
-			//cwarn << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+			cwarn << "Build info:" << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
 			return false;
 		}
 
@@ -562,7 +559,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		}
 		catch (cl::Error const& err)
 		{
-			//cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
+			cwarn << ethCLErrorHelper("Creating DAG buffer failed", err);
 			return false;
 		}
 		// create buffer for header
@@ -571,6 +568,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 
 		m_searchKernel.setArg(1, m_header);
 		m_searchKernel.setArg(2, m_dag);
+		m_searchKernel.setArg(3, 0);
 		m_searchKernel.setArg(5, 0);
 
 		// create mining buffers
@@ -601,7 +599,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 	}
 	catch (cl::Error const& err)
 	{
-		//cwarn << ethCLErrorHelper("OpenCL init failed", err);
+		cwarn << ethCLErrorHelper("OpenCL init failed", err);
 		return false;
 	}
 	return true;
