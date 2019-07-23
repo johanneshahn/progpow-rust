@@ -1,7 +1,7 @@
-use std::path::Path;
-use std::fs::{self, File};
-use std::path::PathBuf;
 use dirs;
+use std::fs::{self, File};
+use std::path::Path;
+use std::path::PathBuf;
 
 use crate::types::{Hardware, PpCompute, ProgPowError, H256};
 use progpow_cpu::cache::{NodeCacheBuilder, OptimizeFor};
