@@ -310,6 +310,8 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 
 	// run search kernel
 	m_queue.enqueueNDRangeKernel(m_searchKernel, cl::NullRange, m_globalWorkSize, m_workgroupSize);
+
+	m_queue.finish();
 }
 
 bool CLMiner::get_solutions(void* data)
@@ -326,8 +328,6 @@ bool CLMiner::get_solutions(void* data)
 
 		memcpy((uint8_t*)data, &nonce, sizeof(uint64_t));
 		memcpy(((uint8_t*)data) + sizeof(uint64_t), results + 2, sizeof(uint32_t) * 8);
-
-		m_queue.finish();
 		return true;
 	}
 
@@ -444,7 +444,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		vector<cl::Device> devices = getDevices(platforms, platformIdx);
 		if (devices.empty())
 		{
-			//ETHCL_LOG("No OpenCL devices found.");
+			cwarn << "No OpenCL devices found.";
 			return false;
 		}
 
@@ -465,7 +465,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 			}
 			else
 			{
-				//ETHCL_LOG("OpenCL " << clVer << " not supported - minimum required version is 1.2");
+				cwarn << "OpenCL " << clVer << " not supported - minimum required version is 1.2";
 				return false;
 			}
 		}
@@ -484,6 +484,7 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		} else {
 			sprintf(options, "%s", "");
 		}
+
 		// create context
 		m_context = cl::Context(vector<cl::Device>(&device, &device + 1));
 		m_queue = cl::CommandQueue(m_context, device);
@@ -513,10 +514,10 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		addDefinition(code, "PLATFORM", platformId);
 		addDefinition(code, "COMPUTE", computeCapability);
 
-        ofstream out;
+        /*ofstream out;
         out.open("kernel.cl");
         out << code;
-        out.close();
+        out.close();*/
 
 		// create miner OpenCL program
 		cl::Program::Sources sources{{code.data(), code.size()}};
@@ -537,10 +538,10 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 		device.getInfo(CL_DEVICE_GLOBAL_MEM_SIZE, &result);
 		if (result < dagBytes)
 		{
-			/*cnote <<
+			cnote <<
 			"OpenCL device " << device.getInfo<CL_DEVICE_NAME>()
 							 << " has insufficient GPU memory." << result <<
-							 " bytes of memory found < " << dagBytes << " bytes of memory required";	*/
+							 " bytes of memory found < " << dagBytes << " bytes of memory required";
 			return false;
 		}
 
@@ -568,7 +569,6 @@ bool CLMiner::init(int epoch, uint64_t block_number)
 
 		m_searchKernel.setArg(1, m_header);
 		m_searchKernel.setArg(2, m_dag);
-		m_searchKernel.setArg(3, 0);
 		m_searchKernel.setArg(5, 0);
 
 		// create mining buffers
