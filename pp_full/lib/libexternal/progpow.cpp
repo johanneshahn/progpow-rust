@@ -73,8 +73,6 @@ extern "C" {
             m_miningThreads = m_cudaDeviceCount;
         }
 
-        CUDAMiner::listDevices();
-
         CUDAMiner::setNumInstances(m_miningThreads);
         if (!CUDAMiner::configureGPU(
                 m_cudaBlockSize,

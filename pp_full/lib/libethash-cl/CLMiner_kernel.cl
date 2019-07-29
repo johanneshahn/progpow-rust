@@ -101,7 +101,8 @@ uint64_t keccak_f800(__constant hash32_t const* g_header, uint64_t seed, hash32_
     // last round can be simplified due to partial output
     //keccak_f800_round(st, 21);
 
-    return (uint64_t)st[0] << 32 | (uint64_t)st[1];
+    uint64_t res = (uint64_t)st[1] << 32 | st[0];
+    return as_ulong(as_uchar8(res).s76543210);
 }
 
 #define fnv1a(h, d) (h = (h ^ d) * 0x1000193)
