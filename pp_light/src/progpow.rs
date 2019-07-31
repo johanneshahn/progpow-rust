@@ -124,7 +124,7 @@ fn keccak_f800(header_hash: H256, nonce: u64, result: [u32; 8], st: &mut [u32; 2
 pub fn keccak_f800_short(header_hash: H256, nonce: u64, result: [u32; 8]) -> u64 {
 	let mut st = [0u32; 25];
 	keccak_f800(header_hash, nonce, result, &mut st);
-	(st[0] as u64) << 32 | st[1] as u64
+	(st[0].swap_bytes() as u64) << 32 | st[1].swap_bytes() as u64
 }
 
 pub fn keccak_f800_long(header_hash: H256, nonce: u64, result: [u32; 8]) -> [u32; 8] {

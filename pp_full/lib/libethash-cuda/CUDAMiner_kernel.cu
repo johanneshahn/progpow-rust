@@ -93,15 +93,12 @@ __device__ __noinline__ uint64_t keccak_f800(hash32_t header, uint64_t seed, has
     for (int i = 0; i < 8; i++)
         st[10+i] = digest.uint32s[i];
 
-    for (int r = 0; r < 21; r++) {
+    for (int r = 0; r < 22; r++) {
         keccak_f800_round(st, r);
     }
-    // last round can be simplified due to partial output
-    keccak_f800_round(st, 21);
 
     // Byte swap so byte 0 of hash is MSB of result
-    //return (uint64_t)cuda_swab32(st[0]) << 32 | cuda_swab32(st[1]);
-    return (uint64_t)st[0] << 32 | st[1];
+    return (uint64_t)cuda_swab32(st[0]) << 32 | cuda_swab32(st[1]);
 }
 
 #define fnv1a(h, d) (h = (uint32_t(h) ^ uint32_t(d)) * uint32_t(0x1000193))
@@ -186,7 +183,6 @@ progpow_search(
         for (uint32_t l = 0; l < PROGPOW_CNT_DAG; l++)
             progPowLoop(l, mix, g_dag, c_dag, hack_false);
 
-
         // Reduce mix data to a per-lane 32-bit digest
         uint32_t digest_lane = 0x811c9dc5;
         #pragma unroll
@@ -209,7 +205,7 @@ progpow_search(
     }
 
     // keccak(header .. keccak(header..nonce) .. digest);
-    if (keccak_f800(header, seed, digest) >= target)
+    if (keccak_f800(header, seed, digest) > target)
         return;
 
     uint32_t index = atomicInc((uint32_t *)&g_output->count, 0xffffffff);
@@ -218,6 +214,7 @@ progpow_search(
 
     g_output->result[index].gid = gid;
     #pragma unroll
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++){
         g_output->result[index].mix[i] = digest.uint32s[i];
+    }
 }

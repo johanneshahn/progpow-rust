@@ -116,7 +116,6 @@ void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t heigh
 	{
 		if (current.height != height || current.epoch != epoch)
 		{
-			current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
 			current.startNonce = 0;
 			current.height = height;
 			current.target = target;
@@ -132,6 +131,9 @@ void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t heigh
 
 			current.epoch = epoch;
 		}
+
+		current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
+
 		uint64_t startN = current.startNonce;
 		/*if (current.exSizeBits >= 0)
 		{
@@ -149,7 +151,6 @@ void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t heigh
 	catch (std::runtime_error const& _e)
 	{
 		cwarn << "Error CUDA mining: " << _e.what();
-		//if(s_exit)
 		exit(1);
 	}
 }
@@ -302,7 +303,7 @@ bool CUDAMiner::cuda_configureGPU(
 		s_scheduleFlag = _scheduleFlag;
 		s_noeval = _noeval;
 
-		cudalog << "Using grid size " << s_gridSize << ", block size " << s_blockSize;
+		//cudalog << "Using grid size " << s_gridSize << ", block size " << s_blockSize;
 
 		// by default let's only consider the DAG of the first epoch
 		uint64_t dagSize = ethash_get_datasize(_currentBlock);
@@ -316,7 +317,7 @@ bool CUDAMiner::cuda_configureGPU(
 				CUDA_SAFE_CALL(cudaGetDeviceProperties(&props, deviceId));
 				if (props.totalGlobalMem >= dagSize)
 				{
-					cudalog <<  "Found suitable CUDA device [" << string(props.name) << "] with " << props.totalGlobalMem << " bytes of GPU memory";
+					//cudalog <<  "Found suitable CUDA device [" << string(props.name) << "] with " << props.totalGlobalMem << " bytes of GPU memory";
 				}
 				else
 				{
@@ -437,15 +438,15 @@ bool CUDAMiner::cuda_init(
 			if (!hostDAG)
 			{
 				if((m_device_num == dagCreateDevice) || !_cpyToHost){ //if !cpyToHost -> All devices shall generate their DAG
-					cudalog << "Generating DAG for GPU #" << m_device_num <<
-							   " with dagBytes: " << dagBytes <<" gridSize: " << s_gridSize;
+					/*cudalog << "Generating DAG for GPU #" << m_device_num <<
+							   " with dagBytes: " << dagBytes <<" gridSize: " << s_gridSize;*/
 					ethash_generate_dag(dag, dagBytes, light, lightWords, s_gridSize, s_blockSize, m_streams[0], m_device_num);
-					cudalog << "Finished DAG";
+					//cudalog << "Finished DAG";
 
 					if (_cpyToHost)
 					{
 						uint8_t* memoryDAG = new uint8_t[dagBytes];
-						cudalog << "Copying DAG from GPU #" << m_device_num << " to host";
+						//cudalog << "Copying DAG from GPU #" << m_device_num << " to host";
 						CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(memoryDAG), dag, dagBytes, cudaMemcpyDeviceToHost));
 
 						hostDAG = memoryDAG;
@@ -472,13 +473,13 @@ cpyDag:
 	}
 	catch (cuda_runtime_error const& _e)
 	{
-		//cwarn << "Fatal GPU error: " << _e.what();
-		//cwarn << "Terminating.";
+		cwarn << "Fatal GPU error: " << _e.what();
+		cwarn << "Terminating.";
 		exit(-1);
 	}
 	catch (std::runtime_error const& _e)
 	{
-		//cwarn << "Error CUDA mining: " << _e.what();
+		cwarn << "Error CUDA mining: " << _e.what();
 		exit(1);
 		return false;
 	}
@@ -643,8 +644,7 @@ void CUDAMiner::search(
 				found_count = SEARCH_RESULTS;
 			for (unsigned int j = 0; j < found_count; j++) {
 				nonces[j] = nonce_base + buffer->result[j].gid;
-				if (s_noeval)
-					memcpy(mixes[j].data(), (void *)&buffer->result[j].mix, sizeof(buffer->result[j].mix));
+				memcpy(mixes[j].data(), (void *)&buffer->result[j].mix, sizeof(buffer->result[j].mix));
 			}
 		}
 	}
@@ -663,7 +663,6 @@ void CUDAMiner::search(
 		if (found_count)
 		{
 			for (uint32_t i = 0; i < found_count; i++) {
-				printf("nonce: %lu\n", nonces[i]);
 				solution = new Solution(nonces[i], mixes[i]);
 				break;
 			}

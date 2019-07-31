@@ -4,7 +4,7 @@
 
 set(CMAKE_C_COMPILER /usr/bin/gcc-7)
 set(CMAKE_CXX_COMPILER /usr/bin/g++-7)
-set(CUDA_ARCH 35;37;53;60;61;62)
+set(CUDA_ARCH 35;37;53;60;61;62;70;75)
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CUDAMiner_kernel.h
@@ -41,7 +41,8 @@ else()
 		"-gencode arch=compute_60,code=sm_60"
 		"-gencode arch=compute_61,code=sm_61"
 		"-gencode arch=compute_62,code=sm_62"
-		#"-gencode arch=compute_75,code=sm_75"
+		"-gencode arch=compute_70,code=sm_70"
+		"-gencode arch=compute_75,code=sm_75"
 	)
 endif()
 
