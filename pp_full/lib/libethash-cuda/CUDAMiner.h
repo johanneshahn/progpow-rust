@@ -58,6 +58,7 @@ class CUDAMiner: public Miner
 
 public:
 	Work current;
+	uint64_t old_period_seed = -1;
 
 	CUDAMiner(unsigned index);
 	~CUDAMiner();

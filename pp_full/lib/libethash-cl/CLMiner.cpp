@@ -278,9 +278,13 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 	uint64_t startNonce = 0;
 
 	if (current.height != height || current.epoch != epoch) {
-		if (current.epoch != epoch){
+
+		uint64_t period_seed = height / PROGPOW_PERIOD;
+
+		if (current.epoch != epoch || old_period_seed != period_seed){
 			// initialize dag for the epoch
 			init(epoch, height);
+			old_period_seed = period_seed;
 		}
 
 		current.startNonce = startNonce;
@@ -298,6 +302,10 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 	} else {
 		current.startNonce += m_globalWorkSize;
 		startNonce = current.startNonce;
+	}
+
+	if (current.header != nullptr) {
+		delete current.header;
 	}
 
 	current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
