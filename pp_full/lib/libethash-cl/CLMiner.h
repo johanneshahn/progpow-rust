@@ -54,6 +54,7 @@ class CLMiner: public Miner
 public:
 	int index;
 	Work current;
+	uint64_t old_period_seed = -1;
 	/* -- default values -- */
 	/// Default value of the local work size. Also known as workgroup size.
 	static const unsigned c_defaultLocalWorkSize = 256;

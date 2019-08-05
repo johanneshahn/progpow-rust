@@ -120,9 +120,13 @@ void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t heigh
 			current.height = height;
 			current.target = target;
 
-			if (current.epoch != epoch){
+			uint64_t period_seed = w.height / PROGPOW_PERIOD;
+
+			if (current.epoch != epoch || old_period_seed != period_seed){
 				if(!init(epoch))
 					exit(1);
+
+				old_period_seed = period_seed;
 
 				uint64_t dagBytes = ethash_get_datasize(height);
 				uint32_t dagElms  = (unsigned)(dagBytes / (PROGPOW_LANES * PROGPOW_DAG_LOADS * 4));
