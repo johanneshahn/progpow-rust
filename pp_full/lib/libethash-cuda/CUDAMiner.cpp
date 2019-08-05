@@ -120,7 +120,7 @@ void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t heigh
 			current.height = height;
 			current.target = target;
 
-			uint64_t period_seed = w.height / PROGPOW_PERIOD;
+			uint64_t period_seed = height / PROGPOW_PERIOD;
 
 			if (current.epoch != epoch || old_period_seed != period_seed){
 				if(!init(epoch))
