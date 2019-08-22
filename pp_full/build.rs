@@ -81,13 +81,13 @@ fn main() {
 			"Release"
 		};
 
-		if cfg!(features = "opencl") {
-			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir);
+		if cfg!(feature = "opencl") {
+			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir, target);
 			println!("cargo:rustc-link-lib=ethash-cl");
 		}
 
-		if cfg!(features = "cuda") {
-			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir);
+		if cfg!(feature = "cuda") {
+			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir, target);
 			println!("cargo:rustc-link-lib=ethash-cuda");
 		}
 
