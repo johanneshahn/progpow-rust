@@ -19,7 +19,12 @@ set(SOURCES
 	${CMAKE_CURRENT_BINARY_DIR}/CLMiner_kernel.h
 )
 
-find_package(OpenCL REQUIRED)
+if(MSVC)
+	hunter_add_package(OpenCL)
+	find_package(OpenCL CONFIG REQUIRED)
+else()
+	find_package(OpenCL REQUIRED)
+endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(..)

@@ -73,10 +73,37 @@ fn main() {
 	fail_on_empty_directory("lib");
 
 	compile_cmake();
-	/*exec_if_newer("lib", &format!("{}/ffi.rs", out_dir), || {
-		//generate_bindings(&out_dir);
-	});*/
 
-	println!("cargo:rustc-link-search={}/build/libexternal", out_dir);
-	println!("cargo:rustc-link-lib=ppow");
+	if cfg!(target_env = "msvc") {
+		let target = if cfg!(debug_assertions) {
+			"Debug"
+		} else {
+			"Release"
+		};
+
+		if cfg!(feature = "opencl") {
+			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir, target);
+			println!("cargo:rustc-link-lib=ethash-cl");
+		}
+
+		if cfg!(feature = "cuda") {
+			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir, target);
+			println!("cargo:rustc-link-lib=ethash-cuda");
+		}
+
+		println!("cargo:rustc-link-search={}/build/libethash/{}", out_dir, target);
+		println!("cargo:rustc-link-lib=ethash");
+		println!("cargo:rustc-link-search={}/build/libprogpow/{}", out_dir, target);
+		println!("cargo:rustc-link-lib=progpow");
+		println!("cargo:rustc-link-search={}/build/libethcore/{}", out_dir, target);
+		println!("cargo:rustc-link-lib=ethcore");
+		println!("cargo:rustc-link-search={}/build/libdevcore/{}", out_dir, target);
+		println!("cargo:rustc-link-lib=devcore");
+		println!("cargo:rustc-link-search={}/build/libexternal/{}", out_dir, target);
+		println!("cargo:rustc-link-lib=ppow");
+		println!("cargo:rustc-link-lib=OpenCL");
+	} else {
+		println!("cargo:rustc-link-search={}/build/libexternal", out_dir);
+		println!("cargo:rustc-link-lib=ppow");
+	}
 }
