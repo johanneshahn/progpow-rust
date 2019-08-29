@@ -82,24 +82,45 @@ fn main() {
 		};
 
 		if cfg!(feature = "opencl") {
-			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir, target);
+			println!(
+				"cargo:rustc-link-search={}/build/libethash-cl/{}",
+				out_dir, target
+			);
 			println!("cargo:rustc-link-lib=ethash-cl");
 		}
 
 		if cfg!(feature = "cuda") {
-			println!("cargo:rustc-link-search={}/build/libethash-cl/{}", out_dir, target);
+			println!(
+				"cargo:rustc-link-search={}/build/libethash-cl/{}",
+				out_dir, target
+			);
 			println!("cargo:rustc-link-lib=ethash-cuda");
 		}
 
-		println!("cargo:rustc-link-search={}/build/libethash/{}", out_dir, target);
+		println!(
+			"cargo:rustc-link-search={}/build/libethash/{}",
+			out_dir, target
+		);
 		println!("cargo:rustc-link-lib=ethash");
-		println!("cargo:rustc-link-search={}/build/libprogpow/{}", out_dir, target);
+		println!(
+			"cargo:rustc-link-search={}/build/libprogpow/{}",
+			out_dir, target
+		);
 		println!("cargo:rustc-link-lib=progpow");
-		println!("cargo:rustc-link-search={}/build/libethcore/{}", out_dir, target);
+		println!(
+			"cargo:rustc-link-search={}/build/libethcore/{}",
+			out_dir, target
+		);
 		println!("cargo:rustc-link-lib=ethcore");
-		println!("cargo:rustc-link-search={}/build/libdevcore/{}", out_dir, target);
+		println!(
+			"cargo:rustc-link-search={}/build/libdevcore/{}",
+			out_dir, target
+		);
 		println!("cargo:rustc-link-lib=devcore");
-		println!("cargo:rustc-link-search={}/build/libexternal/{}", out_dir, target);
+		println!(
+			"cargo:rustc-link-search={}/build/libexternal/{}",
+			out_dir, target
+		);
 		println!("cargo:rustc-link-lib=ppow");
 		println!("cargo:rustc-link-lib=OpenCL");
 	} else {
