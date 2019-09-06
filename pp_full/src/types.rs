@@ -55,6 +55,7 @@ impl GPU {
 		height: u64,
 		epoch: i32,
 		target: u64,
+		startNonce: u64,
 	) -> Result<(), &str> {
 		if let None = self.miner {
 			return Err(MINER_UNINITIALIZED);
@@ -66,10 +67,10 @@ impl GPU {
 			progpow_gpu_compute(
 				miner,
 				hash.as_ptr() as *const c_void,
-				hash.len() as usize,
 				height,
 				epoch,
 				target,
+				startNonce,
 			);
 		}
 

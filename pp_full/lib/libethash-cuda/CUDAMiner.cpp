@@ -110,13 +110,14 @@ bool CUDAMiner::init(int epoch)
 	}
 }
 
-void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t height, int epoch, uint64_t target)
+void CUDAMiner::compute(const void* header, uint64_t height, int epoch, uint64_t target, uint64_t startNonce)
 {
 	try
 	{
+		current.startNonce = startNonce;
+
 		if (current.height != height || current.epoch != epoch)
 		{
-			current.startNonce = 0;
 			current.height = height;
 			current.target = target;
 
@@ -138,13 +139,7 @@ void CUDAMiner::compute(const void* header, uint64_t header_size, uint64_t heigh
 
 		current.header = new h256 { (const uint8_t*)header, h256::ConstructFromPointer };
 
-		uint64_t startN = current.startNonce;
-		/*if (current.exSizeBits >= 0)
-		{
-			// this can support up to 2^c_log2Max_miners devices
-			startN = current.startNonce | ((uint64_t)index << (64 - LOG2_MAX_MINERS - current.exSizeBits));
-		}*/
-		search(current.header->data(), target, false, startN);
+		search(current.header->data(), target, false, startNonce);
 	}
 	catch (cuda_runtime_error const& _e)
 	{

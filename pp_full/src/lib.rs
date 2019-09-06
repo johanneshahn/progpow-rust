@@ -28,7 +28,7 @@ mod test {
 		let ten_millis = time::Duration::from_millis(100);
 
 		loop {
-			pp_gpu.compute(header_hash, height, epoch, boundary);
+			pp_gpu.compute(header_hash, height, epoch, boundary, 0);
 			thread::sleep(ten_millis);
 
 			let solution = pp_gpu.solutions().unwrap();
@@ -55,7 +55,7 @@ mod test {
 		let ten_millis = time::Duration::from_millis(100);
 
 		loop {
-			pp_gpu.compute(header_hash, height, epoch, boundary);
+			pp_gpu.compute(header_hash, height, epoch, boundary, 0);
 			thread::sleep(ten_millis);
 
 			let solution = pp_gpu.solutions().unwrap();

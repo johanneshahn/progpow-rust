@@ -113,12 +113,12 @@ extern "C" {
         return miner;
     }
 
-    void progpow_gpu_compute(void* miner, const void* header, size_t header_size, uint64_t height, int epoch, uint64_t boundary) {
+    void progpow_gpu_compute(void* miner, const void* header, uint64_t height, int epoch, uint64_t boundary, uint64_t startNonce) {
         if (miner == NULL){
             exit(1);
         }
-    
-        return ((Miner*) miner)->compute(header, header_size, height, epoch, boundary);
+
+        return ((Miner*) miner)->compute(header, height, epoch, boundary, startNonce);
     }
 
     bool progpow_gpu_get_solutions(void* miner, void* data) {

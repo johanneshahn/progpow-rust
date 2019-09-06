@@ -123,7 +123,7 @@ public:
 	static unsigned s_dagCreateDevice;
 	static unsigned s_dagLoadMode;
 
-	void compute(const void* header, uint64_t size, uint64_t height, int epoch, uint64_t target) override;
+	void compute(const void* header, uint64_t height, int epoch, uint64_t target, uint64_t startNonce) override;
 	bool get_solutions(void* data) override;
 
 	static uint8_t* s_dagInHostMemory;

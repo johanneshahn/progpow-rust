@@ -13,6 +13,10 @@ impl PpGPU {
 		}
 	}
 
+	pub fn compute_with_startnonce(&self, header: [u8; 32], height: u64, epoch: i32, target: u64, start_nonce: u64) {
+		self.gpu.compute(header, height, epoch, target, start_nonce);
+	}
+
 	pub fn get_solutions(&self) -> Option<(u64, [u8; 32])> {
 		self.gpu.solutions().unwrap()
 	}
@@ -34,7 +38,7 @@ impl PpCompute for PpGPU {
 	}
 
 	fn compute(&self, header: [u8; 32], height: u64, epoch: i32, target: u64) {
-		self.gpu.compute(header, height, epoch, target);
+		self.gpu.compute(header, height, epoch, target, 0);
 	}
 
 	fn hardware(&self) -> Hardware {

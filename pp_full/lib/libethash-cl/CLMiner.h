@@ -91,7 +91,7 @@ public:
 
 	bool init(int epoch, uint64_t block_number);
 
-	void compute(const void* header, size_t header_size, uint64_t height, int epoch, uint64_t target);
+	void compute(const void* header, uint64_t height, int epoch, uint64_t target, uint64_t startNonce);
 	bool get_solutions(void* data);
 
 private:

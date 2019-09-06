@@ -17,7 +17,7 @@ extern "C" {
     bool progpow_destroy(void* miner);
     void* progpow_gpu_init(unsigned device, unsigned driver);
     void progpow_gpu_configure(uint32_t devicesCount);
-    void progpow_gpu_compute(void* miner, const void* header, size_t header_size, uint64_t height, int epoch, uint64_t boundary);
+    void progpow_gpu_compute(void* miner, const void* header, uint64_t height, int epoch, uint64_t boundary, uint64_t startNonce);
     bool progpow_gpu_get_solutions(void* miner, void* data);
 #if defined(__cplusplus)
 }

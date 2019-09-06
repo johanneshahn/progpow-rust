@@ -8,7 +8,7 @@ pub fn get_gpu_solution(header: [u8; 32], height: u64, epoch: i32, target: u64) 
 	let ten_millis = time::Duration::from_millis(100);
 
 	loop {
-		pp_gpu.compute(header, height, epoch, target);
+		pp_gpu.compute(header, height, epoch, target, 0);
 
 		thread::sleep(ten_millis);
 

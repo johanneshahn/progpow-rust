@@ -10,10 +10,10 @@ extern "C" {
 	pub fn progpow_gpu_compute(
 		miner: *mut ::std::os::raw::c_void,
 		header: *const ::std::os::raw::c_void,
-		header_size: usize,
 		height: u64,
 		epoch: i32,
 		target: u64,
+		start_nonce: u64,
 	);
 }
 

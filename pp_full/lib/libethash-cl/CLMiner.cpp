@@ -272,10 +272,9 @@ CLMiner::CLMiner(unsigned _index): current(0,0,-1,0) {
 	index = _index;
 }
 
-void CLMiner::compute(const void* header, size_t header_size, uint64_t height, int epoch, uint64_t target)
+void CLMiner::compute(const void* header, uint64_t height, int epoch, uint64_t target, uint64_t startNonce)
 {
 	uint32_t const c_zero = 0;
-	uint64_t startNonce = 0;
 
 	if (current.height != height || current.epoch != epoch) {
 
@@ -299,9 +298,6 @@ void CLMiner::compute(const void* header, size_t header_size, uint64_t height, i
 
 		//set difficulty to kernel
 		m_searchKernel.setArg(4, target);
-	} else {
-		current.startNonce += m_globalWorkSize;
-		startNonce = current.startNonce;
 	}
 
 	if (current.header != nullptr) {
