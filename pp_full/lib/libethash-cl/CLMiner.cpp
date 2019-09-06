@@ -275,6 +275,7 @@ CLMiner::CLMiner(unsigned _index): current(0,0,-1,0) {
 void CLMiner::compute(const void* header, uint64_t height, int epoch, uint64_t target, uint64_t startNonce)
 {
 	uint32_t const c_zero = 0;
+	current.startNonce = startNonce;
 
 	if (current.height != height || current.epoch != epoch) {
 
@@ -286,7 +287,6 @@ void CLMiner::compute(const void* header, uint64_t height, int epoch, uint64_t t
 			old_period_seed = period_seed;
 		}
 
-		current.startNonce = startNonce;
 		current.height = height;
 		current.target = target;
 		current.epoch = epoch;
