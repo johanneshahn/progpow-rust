@@ -10,7 +10,7 @@ bigint = "4.4.1"
 
 [build-dependencies]
 bindgen = "0.37.0"
-cmake = "0.1.40"
+cmake = "0.1.52"
 filetime = "0.2"
 
 [features]

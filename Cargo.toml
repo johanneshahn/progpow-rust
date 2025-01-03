@@ -11,9 +11,10 @@ lazy_static = "1"
 dirs = "1.0.3"
 progpow_cpu = { path = "./pp_light" }
 
+
 [build-dependencies]
 bindgen = "0.37.0"
-cmake = "0.1.40"
+cmake = "0.1.52"
 filetime = "0.2"
 
 [dependencies.progpow_gpu_cuda]
