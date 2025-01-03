@@ -47,7 +47,7 @@ fn compile_cmake() {
 		make.define("ETHASHCL", "OFF");
 	}
 
-	make.no_build_target(false).build();
+	make.no_build_target(true).build();
 }
 
 fn exec_if_newer<F: Fn()>(inpath: &str, outpath: &str, build: F) {
