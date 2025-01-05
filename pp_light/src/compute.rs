@@ -21,7 +21,7 @@
 
 use crate::cache::{NodeCache, NodeCacheBuilder};
 use crate::keccak::{keccak_256, keccak_512, H256};
-use crate::progpow::{generate_cdag, keccak_f800_long, keccak_f800_short, progpow, CDag};
+use crate::progpow::{generate_cdag, progpow, CDag};
 use crate::seed_compute::SeedHashCompute;
 use crate::shared::*;
 use std::io;
@@ -31,7 +31,7 @@ use std::{mem, ptr};
 
 const MIX_WORDS: usize = ETHASH_MIX_BYTES / 4;
 const MIX_NODES: usize = MIX_WORDS / NODE_WORDS;
-const MIX_HASH: u32 = 0x811c9dc5;
+
 pub const FNV_PRIME: u32 = 0x01000193;
 
 pub type PoW = (H256, H256);
@@ -154,7 +154,7 @@ fn hash_compute(light: &Light, full_size: usize, header_hash: &H256, nonce: u64)
 	struct MixBuf {
 		half_mix: Node,
 		compress_bytes: [u8; MIX_WORDS],
-	};
+	}
 
 	if full_size % MIX_WORDS != 0 {
 		panic!("Unaligned full size");
@@ -351,18 +351,18 @@ mod test {
 
 	#[test]
 	fn test_difficulty_test() {
-		let hash = [
+		let _hash = [
 			0xf5, 0x7e, 0x6f, 0x3a, 0xcf, 0xc0, 0xdd, 0x4b, 0x5b, 0xf2, 0xbe, 0xe4, 0x0a, 0xb3,
 			0x35, 0x8a, 0xa6, 0x87, 0x73, 0xa8, 0xd0, 0x9f, 0x5e, 0x59, 0x5e, 0xab, 0x55, 0x94,
 			0x05, 0x52, 0x7d, 0x72,
 		];
-		let mix_hash = [
+		let _mix_hash = [
 			0x1f, 0xff, 0x04, 0xce, 0xc9, 0x41, 0x73, 0xfd, 0x59, 0x1e, 0x3d, 0x89, 0x60, 0xce,
 			0x6b, 0xdf, 0x8b, 0x19, 0x71, 0x04, 0x8c, 0x71, 0xff, 0x93, 0x7b, 0xb2, 0xd3, 0x2a,
 			0x64, 0x31, 0xab, 0x6d,
 		];
-		let nonce = 0xd7b3ac70a301a249;
-		let boundary_good = [
+		let _nonce = 0xd7b3ac70a301a249;
+		let _boundary_good = [
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3e, 0x9b, 0x6c, 0x69, 0xbc, 0x2c, 0xe2, 0xa2,
 			0x4a, 0x8e, 0x95, 0x69, 0xef, 0xc7, 0xd7, 0x1b, 0x33, 0x35, 0xdf, 0x36, 0x8c, 0x9a,
 			0xe9, 0x7e, 0x53, 0x84,
@@ -397,7 +397,7 @@ mod test {
 
 		let tempdir = TempDir::new("").unwrap();
 		// difficulty = 0x085657254bd9u64;
-		let light = NodeCacheBuilder::new(None, u64::max_value()).light(tempdir.path(), 486382);
+		let light = NodeCacheBuilder::new(None).light(tempdir.path(), 486382);
 		let result = light_compute(&light, &hash, nonce);
 		assert_eq!(result.mix_hash[..], mix_hash[..]);
 		assert_eq!(result.value[..], boundary[..]);
@@ -406,7 +406,7 @@ mod test {
 	#[test]
 	fn test_drop_old_data() {
 		let tempdir = TempDir::new("").unwrap();
-		let builder = NodeCacheBuilder::new(None, u64::max_value());
+		let builder = NodeCacheBuilder::new(None);
 		let first = builder
 			.light(tempdir.path(), 0)
 			.to_file()

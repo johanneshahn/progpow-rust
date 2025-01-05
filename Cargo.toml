@@ -2,9 +2,10 @@
 name = "progpow"
 version = "0.1.0"
 authors = ["Brick Abode <epiccash@brickabode.com>"]
+edition = "2021"
 
 [dependencies]
-libc = "0.2.58"
+libc = "0.2.169"
 bigint = "4.4.1"
 byteorder = "^0.5"
 lazy_static = "1"
@@ -13,7 +14,7 @@ progpow_cpu = { path = "./pp_light" }
 
 
 [build-dependencies]
-bindgen = "0.37.0"
+bindgen = "0.71.1"
 cmake = "0.1.52"
 filetime = "0.2"
 

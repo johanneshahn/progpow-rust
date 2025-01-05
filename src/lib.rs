@@ -1,5 +1,4 @@
 extern crate libc;
-#[macro_use]
 extern crate lazy_static;
 extern crate bigint;
 extern crate dirs;
@@ -16,9 +15,7 @@ pub mod types;
 
 #[cfg(test)]
 mod test {
-	use super::*;
 
-	use bigint::uint::U256;
 	use hardware::PpCPU;
 	use types::PpCompute;
 
@@ -28,7 +25,7 @@ mod test {
 		let nonce: u64 = 10123012301;
 		let header_hash: [u8; 32] = [0; 32];
 		let pp_cpu = PpCPU::new();
-		let (value, mix) = pp_cpu.verify(&header_hash, height, nonce).unwrap();
+		let (_value, mix) = pp_cpu.verify(&header_hash, height, nonce).unwrap();
 		assert_eq!(
 			mix,
 			[

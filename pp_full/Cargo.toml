@@ -3,13 +3,14 @@ name = "progpow_gpu"
 version = "0.1.0"
 authors = ["Brick Abode <a@a.com>"]
 build = "build.rs"
+edition = "2021"
 
 [dependencies]
-libc = "0.2.51"
+libc = "0.2.169"
 bigint = "4.4.1"
 
 [build-dependencies]
-bindgen = "0.37.0"
+bindgen = "0.71.1"
 cmake = "0.1.52"
 filetime = "0.2"
 

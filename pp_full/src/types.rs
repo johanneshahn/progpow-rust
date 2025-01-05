@@ -1,4 +1,4 @@
-use ffi::*;
+use crate::ffi::*;
 use libc::c_void;
 
 const MINER_UNINITIALIZED: &str = "Miner is not initialized";

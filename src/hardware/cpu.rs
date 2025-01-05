@@ -1,11 +1,10 @@
 use dirs;
-use std::fs::{self, File};
-use std::path::Path;
+use std::fs::{self};
 use std::path::PathBuf;
 
 use crate::types::{Hardware, PpCompute, ProgPowError, H256};
-use progpow_cpu::cache::{NodeCacheBuilder, OptimizeFor};
-use progpow_cpu::compute::{light_compute, PoW};
+use progpow_cpu::cache::NodeCacheBuilder;
+
 
 const CACHE_DIR: &str = "cache";
 const EPIC_HOME: &str = ".epic";
@@ -54,7 +53,7 @@ impl PpCompute for PpCPU {
 
 		let light = match self.cache_builder.light_from_file(&path_cache, height) {
 			Ok(l) => l,
-			Err(e) => {
+			Err(_e) => {
 				let mut light = self.cache_builder.light(&path_cache, height);
 				if let Err(e) = light.to_file() {
 					println!("Light cache file write error: {}", e);

@@ -425,7 +425,7 @@ mod test {
 
 	#[test]
 	fn test_cdag() {
-		let builder = NodeCacheBuilder::new(OptimizeFor::Memory, u64::max_value());
+		let builder = NodeCacheBuilder::new(OptimizeFor::Memory);
 		let tempdir = TempDir::new("").unwrap();
 		let cache = builder.new_cache(tempdir.into_path(), 0);
 
@@ -521,7 +521,7 @@ mod test {
 
 	#[test]
 	fn test_progpow_hash() {
-		let builder = NodeCacheBuilder::new(OptimizeFor::Memory, u64::max_value());
+		let builder = NodeCacheBuilder::new(OptimizeFor::Memory);
 		let tempdir = TempDir::new("").unwrap();
 		let cache = builder.new_cache(tempdir.into_path(), 0);
 		let c_dag = generate_cdag(cache.as_ref());
@@ -581,7 +581,7 @@ mod test {
 			.collect();
 
 		for test in tests {
-			let builder = NodeCacheBuilder::new(OptimizeFor::Memory, u64::max_value());
+			let builder = NodeCacheBuilder::new(OptimizeFor::Memory);
 			let tempdir = TempDir::new("").unwrap();
 			let cache = builder.new_cache(tempdir.path().to_owned(), test.block_number);
 			let c_dag = generate_cdag(cache.as_ref());

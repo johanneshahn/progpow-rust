@@ -1,4 +1,4 @@
-use std::{thread, time};
+
 
 extern crate libc;
 
@@ -8,7 +8,7 @@ pub mod utils;
 
 pub use types::{Driver, GPU};
 
-use libc::c_void;
+
 
 #[cfg(test)]
 mod test {

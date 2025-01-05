@@ -21,8 +21,8 @@ pub fn fail_on_empty_directory(name: &str) {
 fn generate_bindings(out_dir: &str) {
 	let bindings = bindgen::Builder::default()
 		.header("lib/libexternal/progpow.h")
-		.blacklist_type("max_align_t")
-		.blacklist_type("_bindgen_ty_1")
+		.blocklist_type("max_align_t")
+		.blocklist_type("_bindgen_ty_1")
 		.generate()
 		.expect("Unable to generate bindings");
 
